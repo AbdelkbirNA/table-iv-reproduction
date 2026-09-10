@@ -1,3 +1,5 @@
+import pytest
+
 from table_iv_replication.fault_classifier import (
     CORRECT,
     CORRECT_SECONDARY,
@@ -14,6 +16,7 @@ from table_iv_replication.fault_classifier import (
     SENS_ORIGINAL_ONLY,
     UNUSABLE,
     Candidate,
+    CandidateResult,
     classify_task,
     summarize,
 )
@@ -85,6 +88,34 @@ def test_difficulty_is_the_complement_of_the_trigger_ratio():
     assert result.triggered_inputs == 1
     assert result.trigger_ratio == 1 / 5
     assert result.evalplus_domain_difficulty == 0.8
+
+
+def test_retention_threshold_direction_and_boundary():
+    """The paper discards difficulty < 0.75, i.e. retains >= 0.75. Inclusive."""
+
+    def flag(triggered, observed):
+        result = CandidateResult(
+            candidate_id="c", task_id="T/0", prompt_variant=PROMPT_ORIGINAL,
+            artifact="test-artifact", generated_code_present=True, loadable=True,
+            primary_classification=FAULTY, secondary_classification=FAULTY_SECONDARY,
+            sensitivity=SENS_FAULTY_BOTH,
+            total_inputs=observed, observed_inputs=observed, triggered_inputs=triggered,
+        )
+        return result.evalplus_domain_difficulty, result.provisional_difficult_candidate
+
+    assert DIFFICULTY_THRESHOLD == 0.75
+
+    difficulty, retained = flag(250_001, 1_000_000)   # 0.749999
+    assert difficulty == pytest.approx(0.749999)
+    assert retained is False
+
+    difficulty, retained = flag(250_000, 1_000_000)   # exactly 0.75
+    assert difficulty == 0.75
+    assert retained is True
+
+    difficulty, retained = flag(100_000, 1_000_000)   # 0.900000
+    assert difficulty == pytest.approx(0.9)
+    assert retained is True
 
 
 def test_threshold_is_inclusive_at_exactly_0_75():

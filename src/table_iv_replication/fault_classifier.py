@@ -48,6 +48,8 @@ SENS_EVALPLUS_ONLY = "faulty_only_under_evalplus"
 SENS_ORIGINAL_ONLY = "faulty_only_under_original_humaneval"
 SENS_INCONCLUSIVE = "sensitivity_inconclusive"
 
+# The paper discards faults with difficulty below 0.75, i.e. retains those at
+# 0.75 or above -- faults triggered by at most 25% of the tests. Inclusive.
 DIFFICULTY_THRESHOLD = 0.75
 
 
@@ -103,9 +105,11 @@ class CandidateResult:
     def evalplus_domain_difficulty(self) -> float | None:
         """1 - trigger_ratio over the EvalPlus input domain.
 
-        NOT the paper's fault difficulty: the paper measures it over an
-        augmented suite that includes LLM-generated differential tests, which we
-        do not have. See docs/experiment_plan.md.
+        NOT the paper's fault difficulty: the paper measures it over the
+        fault_discovery_augmented_tests suite, which we do not have. That suite
+        is also distinct from the table_iv_llm_plain_tests pool Table IV samples
+        from. See "Two distinct LLM-generated test processes" in
+        docs/experiment_plan.md.
         """
         ratio = self.trigger_ratio
         return None if ratio is None else 1.0 - ratio

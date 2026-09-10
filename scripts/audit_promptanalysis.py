@@ -242,7 +242,7 @@ def audit_generations(name, plus, problems, *, expect_us=False, us_variants=None
     print(f"n_Tests distribution (top 8): {dict(Counter(r.metadata.get('n_Tests') for r in records).most_common(8))}")
     print("Reading: TestCases carrying the stock HumanEval check() assertions (same")
     print("         'author': 'jt' METADATA header) are BENCHMARK tests, not an")
-    print("         LLM-generated (LLM-Plain) pool.")
+    print("         table_iv_llm_plain_tests pool, nor fault_discovery_augmented_tests.")
 
     print("\nReference-implementation provenance:")
     cs_bench = sum(
@@ -315,7 +315,7 @@ def main() -> int:
          f"{len(us)} records, {sorted(per_task_us)} per task",
          "Same multiplicity gap; provenance vs Table IV unproven"),
         ("Embedded TestCases", "No (as a test pool)", "HumanEval benchmark check() assertions",
-         "These are benchmark tests, not an LLM-generated pool; LLM-Plain tests still missing"),
+         "Benchmark tests, not table_iv_llm_plain_tests; that pool is still missing"),
         ("EvalPlus HumanEval+", "Yes", "Ground truth already validated in this repo",
          "Supplies expected behaviour, not the paper's test pool"),
     ]

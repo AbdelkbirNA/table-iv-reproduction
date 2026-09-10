@@ -41,7 +41,9 @@ This allows the Table IV sampling protocol to be tested before all original pape
 
 ## Important methodological assumptions
 
-The arXiv paper does not identify the exact Python mutation engine/operators used, and it does not expose a replication-package URL in the paper text. The official LLM-Plain repository currently says its Python implementation is work in progress. Therefore, any replacement mutation engine or regenerated test pool must be documented as a simplifying assumption.
+The arXiv paper does not identify the exact Python mutation engine/operators used, and it does not expose a replication-package URL in the paper text. The official LLM-Plain repository currently says the implementation available through YATE is Java-oriented and its Python implementation is work in progress, so we do not possess the `table_iv_llm_plain_tests` pool (the paper reports 4,872 LLM-Plain tests for HumanEval). Therefore, any replacement mutation engine or regenerated test pool must be documented as a simplifying assumption.
+
+The paper generates tests with an LLM at two distinct points, and this repository keeps them apart: `fault_discovery_augmented_tests` (differential tests that define the fault corpus and the paper's difficulty) and `table_iv_llm_plain_tests` (the pool Table IV samples adequate suites from). See `docs/experiment_plan.md`.
 
 ## Local setup
 

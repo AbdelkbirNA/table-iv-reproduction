@@ -114,7 +114,10 @@ generation artifacts**. It carries the stock HumanEval `check()` function,
 `METADATA = {'author': 'jt', ...}` header included.
 
 > These are the **HumanEval benchmark tests**. They are **not** an
-> LLM-generated test pool and must never be treated as LLM-Plain output.
+> `table_iv_llm_plain_tests` pool, and they are not
+> `fault_discovery_augmented_tests` either. They must never be treated as
+> LLM-Plain output. See "Two distinct LLM-generated test processes" in
+> `docs/experiment_plan.md`.
 
 ## E. Reference-oracle equivalence audit
 
@@ -264,16 +267,45 @@ inputs means no *available* input distinguishes them; an input outside the
 domain still could. Nothing here licenses the phrase "the two references are
 equivalent" without the qualifier.
 
+## F. LLM-Plain availability -- open reproducibility gap
+
+Table IV's sampling pool (`table_iv_llm_plain_tests`) is produced by **LLM-Plain**.
+As of this audit, the public repository
+
+<https://github.com/michaelkonstantinou/llm-plain>
+
+states that:
+
+- the implementation available through **YATE is Java-oriented**;
+- the **Python implementation is work in progress**.
+
+**We therefore do not possess an official Python LLM-Plain implementation
+matching the Table IV experiment.** The paper reports 4,872 LLM-Plain tests for
+HumanEval; we have none, and we cannot regenerate them with the authors' tool.
+
+No Python LLM-Plain configuration is to be invented. If a substitute test
+generator is used later it must be named as a substitute, its prompt and model
+recorded, and its pool size reported next to the paper's 4,872 — never presented
+as an LLM-Plain reproduction.
+
+This gap blocks Table IV directly: FTR and FDR are properties of suites sampled
+from this pool, so no faithful FTR/FDR number can be produced without it.
+
 ## D. Still missing for a faithful HumanEval / GPT-5-mini Table IV run
 
 1. **10 generations per prompt per task.** We have 1. Nine tenths of the fault
    population the paper draws from does not exist in these artifacts.
 2. **Sampling parameters.** Temperature 0.8 is the paper's; these artifacts
    record no temperature at all, so we cannot confirm how they were produced.
-3. **The LLM-generated test pool (`TS_f`).** The single largest gap: Table IV
-   samples suites *from generated tests*, and no such pool exists here.
+3. **The `table_iv_llm_plain_tests` pool (`TS_f`).** The single largest gap:
+   Table IV samples suites *from generated tests*, and no such pool exists here.
+   The paper reports 4,872 LLM-Plain tests for HumanEval. See the LLM-Plain
+   availability note below.
+4. **The `fault_discovery_augmented_tests`.** The differential tests that define
+   the paper's fault corpus and the denominator of its fault difficulty. Absent,
+   so our `evalplus_domain_difficulty` is not the paper's difficulty.
 4. **The 84 retained difficult faults**, and the criterion used to retain them.
-5. **The mutation engine and operator set** (open as assumption A2).
-6. **Any evidence linking these generations to the Table IV experiment.**
+6. **The mutation engine and operator set** (open as assumption A2).
+7. **Any evidence linking these generations to the Table IV experiment.**
    Until such evidence exists, results built on them are a reconstruction,
    not a reproduction.

@@ -1,7 +1,7 @@
 """Validate per-test mutation adequacy on HumanEval/0.
 
 INFRASTRUCTURE VALIDATION ONLY. The HumanEval+ inputs used here are a smoke-test
-pool, not the paper's LLM-generated test pool, and the canonical solution stands
+pool, not the paper's table_iv_llm_plain_tests pool, and the canonical solution stands
 in for a program under test. Nothing printed here is a Table IV result.
 
 Provisional mutation engine: mutmut 3.7.0 (assumption A2, docs/experiment_plan.md).

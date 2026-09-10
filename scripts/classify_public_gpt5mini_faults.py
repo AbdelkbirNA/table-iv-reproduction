@@ -262,9 +262,14 @@ def main(argv=None) -> int:
                     "difficulty_definition": (
                         "evalplus_domain_difficulty = 1 - triggered/observed over the EvalPlus "
                         "input domain. NOT the paper's fault difficulty, which is measured over "
-                        "an augmented suite including LLM-generated differential tests."
+                        "the fault_discovery_augmented_tests suite (distinct from the "
+                        "table_iv_llm_plain_tests pool Table IV samples from)."
                     ),
                     "difficulty_threshold": DIFFICULTY_THRESHOLD,
+                    "difficulty_threshold_direction": (
+                        "provisional_difficult_candidate = difficulty >= 0.75, matching the "
+                        "paper's rule of discarding faults with difficulty below 0.75"
+                    ),
                     "generations_per_task": 1,
                     "paper_generations_per_task": 10,
                     "runtime_seconds": round(elapsed, 2),

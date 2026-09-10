@@ -4,7 +4,9 @@
 
 For each faulty implementation and each adequacy criterion:
 
-1. Start with the full generated test pool for that fault.
+1. Start with the full generated test pool for that fault (`TS_f`, the
+   **`table_iv_llm_plain_tests`** pool -- not the fault-discovery augmented
+   tests; see below).
 2. Randomly consider tests.
 3. Keep a test only when it increases the target adequacy criterion.
 4. Stop when the sampled suite reaches the same target-criterion value as the full pool.
@@ -106,9 +108,23 @@ reported, so the 17 divergent tasks can never silently drive a result. See
 ## Fault difficulty -- assumption A5
 
 The target paper defines fault difficulty as the complement of the proportion of
-tests that trigger the fault, then keeps implementations with difficulty below
-0.75 and retains the most difficult implementation per task. For HumanEval +
-GPT-5-mini it reports 84 retained faults.
+tests that trigger the fault:
+
+```
+difficulty = 1 - (tests that trigger the fault / tests in the suite)
+```
+
+It then **discards faults whose difficulty is lower than 0.75**, i.e. **retains
+faults with difficulty >= 0.75** -- faults triggered by at most 25% of the
+tests, the hard-to-catch ones. Where a task has several retained faults, it
+keeps the one with the **highest** difficulty. For HumanEval + GPT-5-mini it
+reports 84 retained faults.
+
+> Correction, 2026-09-10: an earlier draft of this section said the paper keeps
+> difficulty *below* 0.75. That was wrong, and it was wrong only in prose --
+> `fault_classifier.CandidateResult.provisional_difficult_candidate` has always
+> tested `difficulty >= DIFFICULTY_THRESHOLD` (0.75), so no computed result was
+> affected. `tests/test_fault_classifier.py` now pins the boundary explicitly.
 
 We compute:
 
@@ -120,17 +136,58 @@ evalplus_domain_difficulty = 1 - trigger_ratio
 **over the EvalPlus HumanEval+ input domain only**, and we call it
 `evalplus_domain_difficulty` everywhere -- never "fault difficulty".
 
-The two are not the same quantity. The paper measures difficulty over an
-**augmented** suite that includes additional LLM-generated differential tests;
-we do not have those artifacts. A different denominator gives a different
-difficulty, so a candidate at 0.80 here could sit either side of the paper's
-threshold there.
+The two are not the same quantity. The paper measures difficulty over the
+**fault-discovery augmented suite** (see the next section); we measure it over
+the EvalPlus input domain. A different denominator gives a different difficulty,
+so a candidate at 0.80 here could sit either side of the paper's threshold
+there.
 
 Candidates at `evalplus_domain_difficulty >= 0.75` are reported as
-**`provisional_difficult_candidate`**, a diagnostic count only. They are *not*
-"selected Table IV faults", and no per-task selection is performed: with one
-generation per prompt variant instead of ten, there is no population to select
-the most difficult member from.
+**`provisional_difficult_candidate`** -- the same direction as the paper's
+retention rule, on a different denominator. It is a diagnostic count only. These
+are *not* "selected Table IV faults", and no per-task selection (keep the
+highest-difficulty fault) is performed: with one generation per prompt variant
+instead of ten, there is no population to select the most difficult member from.
+
+## Two distinct LLM-generated test processes -- do not conflate
+
+The paper generates tests with an LLM at two different points, for two different
+purposes. Confusing them corrupts both the fault corpus and the sampling pool,
+so each has its own name in this repository.
+
+### A. `fault_discovery_augmented_tests`
+
+Per generated implementation, **additional differential tests** are generated to
+expose behavioural differences against the reference implementation. They form
+the *augmented suite* used to:
+
+- identify which generated implementations are faulty,
+- compute the paper's **fault difficulty**,
+- apply the **difficulty >= 0.75** retention filter,
+- select the **highest-difficulty fault per task**.
+
+This suite is upstream of Table IV. It decides *which faults exist*. It is
+**not** the pool Table IV samples from, and it must never be called the
+LLM-Plain pool.
+
+**What we have:** nothing. Our fault labelling uses the EvalPlus HumanEval+
+input domain as a stand-in denominator, which is why our metric is named
+`evalplus_domain_difficulty` and never "fault difficulty".
+
+### B. `table_iv_llm_plain_tests`
+
+Separately, the paper uses **LLM-Plain** to generate the **test pool** from which
+statement-, branch- and mutation-adequate suites are randomly sampled. The paper
+reports **4,872 LLM-Plain tests for HumanEval**. This pool is `TS_f` in the
+protocol at the top of this document, and it is the only pool Table IV's
+randomized sampling draws from.
+
+**What we have:** nothing. See the LLM-Plain availability note in
+`docs/data_provenance.md`.
+
+The distinction matters concretely: the fault corpus depends on A, the FTR/FDR
+numbers depend on B, and a suite sampled from A would answer a different
+question than Table IV asks.
 
 ## Mutation adequacy -- experimental assumptions A2 and A3
 
@@ -225,8 +282,8 @@ HumanEval + GPT-5-mini.
 
 **The HumanEval+ inputs currently exercised by `scripts/smoke_*.py` are
 smoke-test data only.** They validate the instrumentation; they are not the
-paper's test pool. Table IV uses the LLM-generated test pool for each fault,
-which we have not yet obtained or reconstructed. No number produced from the
+paper's test pool. Table IV samples from the `table_iv_llm_plain_tests` pool for
+each fault, which we have not yet obtained or reconstructed. No number produced from the
 HumanEval+ input pool may be presented as a reproduction of Table IV.
 
 The paper reports 84 selected non-trivial HumanEval faults for GPT-5-mini.
@@ -234,7 +291,8 @@ The paper reports 84 selected non-trivial HumanEval faults for GPT-5-mini.
 ## Artifacts we still need
 
 - selected faulty GPT-5-mini HumanEval implementations
-- LLM-generated test pool associated with each selected fault
+- `table_iv_llm_plain_tests`: the LLM-Plain test pool associated with each selected fault
+- `fault_discovery_augmented_tests`: the differential tests used to identify faults and compute the paper's difficulty
 - original test assertions/oracles
 - per-test statement/branch coverage data (implemented: computed directly from each target source)
 - mutation operator/tool details, or a justified substitute
@@ -250,5 +308,6 @@ The paper reports 84 selected non-trivial HumanEval faults for GPT-5-mini.
 
 1. The paper does not identify the exact Python mutation tool/operator set -- see **assumption A2** above. mutmut 3.7.0 is a provisional stand-in behind a replaceable adapter.
 2. The paper mentions a replication package but does not expose a URL in the PDF/HTML text currently available.
-3. LLM-Plain's public repository says Python support is work in progress, so reproducing the exact generated test pool from that repository is not currently possible.
+3. LLM-Plain's public repository says Python support is work in progress, so reproducing the exact `table_iv_llm_plain_tests` pool from that repository is not currently possible. See the LLM-Plain availability note in `docs/data_provenance.md`.
+4. The paper does not expose the prompt or configuration used for the `fault_discovery_augmented_tests`, so the denominator of its fault difficulty cannot be reconstructed.
 4. ~~We must confirm whether adequacy is computed against each faulty implementation or another program variant~~ -- resolved as **assumption A1** above: adequacy is measured against the faulty implementation. Still an assumption, not a confirmed convention; instrumentation stays outside the sampling core so it can be switched without rewriting the protocol.
