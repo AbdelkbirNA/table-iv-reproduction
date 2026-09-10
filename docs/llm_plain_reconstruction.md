@@ -198,6 +198,31 @@ This matters for our FDR work: under this workflow, an LLM assertion that
 assertion, and the loop will try to make it pass. Whether the Table IV pipeline
 did the same against faulty implementations is **UNKNOWN** and consequential.
 
+### Repair policy: corrected 2026-09-11
+
+An earlier draft of this reconstruction set `repairs_assertion_failures = False`
+as a deliberate deviation. That was the wrong default. The public implementation
+collects errors with `includeCompilingTests = true` — it *runs* the suite and
+feeds back whatever the runner reports — so the strongest public-YATE-faithful
+reading is that Plain repairs failures from a compiling, running suite, assertion
+failures included, up to five times. The reconstruction now follows it.
+
+Two configurations exist, and both are exercised rather than one being hidden:
+
+| Config | `repairs_assertion_failures` | Our provenance | Table IV status |
+|---|---|---|---|
+| `PUBLIC_YATE_FAITHFUL` | `True` | `CONFIRMED_PUBLIC_IMPLEMENTATION` | `UNKNOWN_TARGET_PAPER_IMPLEMENTATION` |
+| `ALTERNATIVE_SENSITIVITY_CONFIG` | `False` | `INFERRED_ADAPTATION` | `UNKNOWN_TARGET_PAPER_IMPLEMENTATION` |
+
+`LLMPlainConfig` now carries **two** provenance maps: where *our* value comes
+from, and whether the *paper* settles the field. A value read from the Java
+source can therefore never be mistaken for a paper fact, and
+`with_values()` cannot upgrade the paper status by changing our value.
+
+The paper's own RQ3 motivation — that exposure to faulty code can bias generated
+oracles toward the faulty behaviour — is why the sensitivity arm exists: running
+both quantifies how much the repair policy moves FDR instead of assuming it.
+
 ## K. Parsing / post-processing — `CONFIRMED_PUBLIC_IMPLEMENTATION`
 
 `CodeResponse.extractCodeFromResponse`, with `lang = LANG.lowercase()`:
@@ -244,7 +269,34 @@ So one program under test costs **1 generation request + at most 5 repair
 requests**, and terminates when the tests report no errors, or after 5 repair
 attempts, whichever comes first.
 
-## Execution architecture for generated tests (design; nothing generated yet)
+## Base suites (Table IV / RQ1) vs regenerated oracles (RQ3)
+
+Two different test artifacts appear in the paper, and using the wrong one for
+Table IV would silently change what is being measured.
+
+**Table IV / RQ1 uses the BASE LLM-generated test suites** — the oracles exactly
+as LLM-Plain produced them, faulty-biased ones included. That bias is part of the
+phenomenon Table IV reports: a suite can be coverage-adequate, trigger the fault,
+and still fail to detect it because its own oracle agrees with the faulty output.
+
+**RQ3 is a separate, later procedure.** It takes the *triggering* tests from
+those base suites and **regenerates their oracles** from:
+
+- the test input / prefix, and
+- the natural-language specification,
+- **not** the faulty implementation.
+
+The paper states that this corrected-oracle procedure repairs runtime errors up
+to five times. Note what that means: the five iterations there are RQ3's
+oracle-correction loop, which is *not* the same thing as Plain-LLM's five repair
+iterations during generation, even though both happen to be five.
+
+> **For Table IV we need the original generated oracle.** RQ3's
+> specification-guided regeneration must never be used to produce a Table IV
+> number. `GeneratedTestSuite` stores the raw response and the original extracted
+> oracle for exactly this reason, and nothing in the pipeline rewrites an oracle.
+
+## Execution architecture for generated tests
 
 Generated tests are arbitrary untrusted code, so they run only in a child
 process, reusing `target.run_streamed_worker` — the same streaming worker with
@@ -286,8 +338,42 @@ entry point) is reported as such rather than counted either way.
 `TestCaseRecord.runnable_module` already emits `preamble + single test` as a
 standalone module, which is the unit both steps execute.
 
-This is a design note. No such runner is implemented yet, and no test has been
-generated to run through it.
+### Implemented 2026-09-11
+
+`src/table_iv_replication/generated_test_runner.py` plus
+`_generated_test_worker.py`. The design above is what was built, with the
+classification made explicit:
+
+| reference | faulty | triggered | verdict | counts for FDR |
+|---|---|---|---|---|
+| PASS | ASSERTION_FAILURE | yes | `DETECTED` | **yes** |
+| PASS | ASSERTION_FAILURE | no | `DETECTION_INCONCLUSIVE` | no |
+| PASS | PASS | yes | `TRIGGERED_NOT_DETECTED` | no |
+| PASS | PASS | no | `NOT_TRIGGERED` | no |
+| ASSERTION_FAILURE | PASS | any | `FAULTY_BIASED_ORACLE` | no |
+| ASSERTION_FAILURE | ASSERTION_FAILURE | any | `INVALID_ORACLE` | no |
+| PASS | RUNTIME_ERROR | any | `DETECTION_INCONCLUSIVE` | no |
+| RUNTIME_ERROR / INVALID_TEST / TIMEOUT on either side | | | `BROKEN_TEST` | no |
+
+`DETECTED` is the only verdict that contributes to FDR. A fault-induced crash is
+`DETECTION_INCONCLUSIVE` rather than detection, because the *oracle* did not
+judge anything — the program merely fell over. That is a conservative choice
+which under-reports rather than inflates FDR; it is isolated in
+`classify_detection` so it can be revisited with one edit if the paper's
+convention turns out to differ.
+
+### Isolation: what it is and is not
+
+Generated tests and candidate implementations are arbitrary Python. Every
+execution happens in a child process launched from a temporary directory, with a
+per-test `SIGALRM` limit, a parent-side stall detector, bounded stderr capture
+(64 KiB), unique module names per load, and `shutil.rmtree` cleanup. The worker
+imports nothing from this package except the output comparator, loaded by path.
+
+**This is process isolation for research artifacts, not a hardened adversarial
+sandbox.** A test that deliberately writes outside its directory, opens a socket,
+calls `os._exit`, or forks is not contained. Nothing here should be pointed at
+genuinely hostile code.
 
 ## Verification of the specific claims put to us
 

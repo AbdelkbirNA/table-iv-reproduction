@@ -189,6 +189,43 @@ The distinction matters concretely: the fault corpus depends on A, the FTR/FDR
 numbers depend on B, and a suite sampled from A would answer a different
 question than Table IV asks.
 
+## Generated-test evaluation -- decisions A6 and A7
+
+### A6: repair policy follows the public implementation
+
+The Plain workflow repairs whatever the test runner surfaces -- compile errors
+and failing assertions alike -- up to five times
+(`CONFIRMED_PUBLIC_IMPLEMENTATION`; see `docs/llm_plain_reconstruction.md`
+section J). Our `PUBLIC_YATE_FAITHFUL` config does the same. Whether the
+unpublished Python Table IV implementation did is
+`UNKNOWN_TARGET_PAPER_IMPLEMENTATION`, and `ALTERNATIVE_SENSITIVITY_CONFIG`
+(assertion repair off) exists to measure how much that choice moves FDR.
+
+### A7: triggering and detection are computed separately, detection conservatively
+
+A test **triggers** a fault when at least one recorded invocation of the entry
+point yields a different observable outcome on the faulty program than on the
+reference, under the same comparator used for every other trigger decision in
+this project. Inputs are captured by proxying the entry point at runtime, not by
+parsing values out of the test source, so a test making several calls with
+arbitrary expressions is handled like a literal one.
+
+A test **detects** a fault only when it passes on the reference *and* its own
+assertion fails on the faulty program *and* an input genuinely distinguishes the
+two. Nothing else counts: an oracle that agrees with the faulty output
+(`FAULTY_BIASED_ORACLE`), an oracle wrong on both programs (`INVALID_ORACLE`), a
+broken test, a timeout, and a fault-induced crash
+(`DETECTION_INCONCLUSIVE`) all yield `detects_fault = False`. FDR is
+under-reported rather than inflated where causality is unclear.
+
+### Table IV uses base suites, never RQ3's regenerated oracles
+
+Table IV / RQ1 evaluates the **original** LLM-generated oracles. RQ3 separately
+regenerates oracles for triggering tests from the input plus the natural-language
+specification (not the faulty code), repairing runtime errors up to five times.
+Those are different artifacts answering different questions; RQ3 output must
+never feed a Table IV number.
+
 ## Mutation adequacy -- experimental assumptions A2 and A3
 
 ### A2: mutmut 3.7.0 is a provisional engine, not the authors' tool

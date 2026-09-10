@@ -4,8 +4,10 @@ import pathlib
 import pytest
 
 from table_iv_replication.llm_plain_protocol import (
+    ALTERNATIVE_SENSITIVITY_CONFIG,
+    MODULE_LEVEL_TEST_NAME,
     PUBLIC_JAVA_PLAIN,
-    PYTHON_RECONSTRUCTION,
+    PUBLIC_YATE_FAITHFUL,
     TABLE_IV_AS_PUBLISHED,
     GeneratedTestSuite,
     LLMPlainConversation,
@@ -65,14 +67,49 @@ def test_table_iv_parameters_are_unknown_and_cannot_be_defaulted():
     assert TABLE_IV_AS_PUBLISHED.provenance_of("language") is Provenance.CONFIRMED_TARGET_PAPER
 
 
-def test_our_reconstruction_never_claims_paper_provenance_for_its_choices():
-    for name in ("generation_temperature", "max_repair_iterations", "test_framework"):
-        assert PYTHON_RECONSTRUCTION.provenance_of(name) is Provenance.INFERRED_ADAPTATION
-    # Repairing assertion failures is deliberately off, and explained.
-    assert PYTHON_RECONSTRUCTION.repairs_assertion_failures is False
-    assert "FDR" in PYTHON_RECONSTRUCTION.notes["repairs_assertion_failures"]
-    # The model is still an open decision.
-    assert not PYTHON_RECONSTRUCTION.is_known("model_name")
+def test_reconstruction_follows_the_public_repair_policy():
+    """Corrected: the public implementation repairs whatever the runner surfaces,
+    assertion failures included, so the faithful arm does too."""
+    config = PUBLIC_YATE_FAITHFUL
+
+    assert config.repairs_assertion_failures is True
+    assert config.provenance_of("repairs_assertion_failures") is (
+        Provenance.CONFIRMED_PUBLIC_IMPLEMENTATION
+    )
+    # But the paper never says so, and the two facts travel together.
+    assert config.target_paper_status("repairs_assertion_failures") is (
+        Provenance.UNKNOWN_TARGET_PAPER_IMPLEMENTATION
+    )
+    assert not config.confirmed_by_target_paper("repairs_assertion_failures")
+    assert "UNKNOWN" in config.notes["repairs_assertion_failures"]
+    # Values taken from the Java source are tagged as such, not as adaptations.
+    for name in ("generation_temperature", "max_repair_iterations"):
+        assert config.provenance_of(name) is Provenance.CONFIRMED_PUBLIC_IMPLEMENTATION
+        assert not config.confirmed_by_target_paper(name)
+    # Our own choice stays an adaptation; the model is still undecided.
+    assert config.provenance_of("test_framework") is Provenance.INFERRED_ADAPTATION
+    assert not config.is_known("model_name")
+
+
+def test_sensitivity_arm_turns_assertion_repair_off_as_our_own_choice():
+    arm = ALTERNATIVE_SENSITIVITY_CONFIG
+
+    assert arm.repairs_assertion_failures is False
+    assert arm.provenance_of("repairs_assertion_failures") is Provenance.INFERRED_ADAPTATION
+    assert "FDR" in arm.notes["repairs_assertion_failures"]
+    # Everything else still carries its public-implementation provenance.
+    assert arm.provenance_of("generation_temperature") is (
+        Provenance.CONFIRMED_PUBLIC_IMPLEMENTATION
+    )
+    assert arm.max_repair_iterations == PUBLIC_YATE_FAITHFUL.max_repair_iterations
+
+
+def test_the_paper_status_of_a_field_is_never_changed_by_our_choices():
+    derived = PUBLIC_YATE_FAITHFUL.with_values(generation_temperature=0.9)
+    assert derived.provenance_of("generation_temperature") is Provenance.INFERRED_ADAPTATION
+    assert derived.target_paper_status("generation_temperature") is (
+        Provenance.UNKNOWN_TARGET_PAPER_IMPLEMENTATION
+    )
 
 
 def test_derived_config_downgrades_overridden_fields_to_adaptation():
@@ -184,8 +221,43 @@ def test_parsing_never_executes_valid_code_either(tmp_path):
     marker = tmp_path / "executed"
     code = f"import pathlib\npathlib.Path({str(marker)!r}).touch()\n\n\ndef test_x():\n    assert True\n"
     cases, error = split_test_cases(code)
-    assert error is None and [c.name for c in cases] == ["test_x"]
+
+    assert error is None
+    # The top-level call is captured as a module-level check, not buried in the
+    # preamble where it would re-run for every other test.
+    assert [case.name for case in cases] == ["test_x", MODULE_LEVEL_TEST_NAME]
+    assert cases[1].module_level is True
+    assert "touch()" not in cases[0].preamble
+    # ...and parsing did not run it.
     assert not marker.exists()
+
+
+def test_top_level_asserts_are_kept_and_never_duplicated_into_the_preamble():
+    code = (
+        "from solution import classify\n\n"
+        "def helper():\n    return 1\n\n"
+        "assert classify(1) == 10\n"
+        "assert classify(-1) == 20\n\n"
+        "def test_named():\n    assert classify(0) == 20\n"
+    )
+    cases, error = split_test_cases(code)
+    by_name = {case.name: case for case in cases}
+
+    assert error is None
+    assert set(by_name) == {"test_named", MODULE_LEVEL_TEST_NAME}
+    module_level = by_name[MODULE_LEVEL_TEST_NAME]
+    assert module_level.module_level is True
+    assert module_level.source.splitlines() == [
+        "assert classify(1) == 10",
+        "assert classify(-1) == 20",
+    ]
+    # The preamble carries imports and helpers only -- no assertions.
+    for case in cases:
+        assert "assert" not in case.preamble
+        assert "from solution import classify" in case.preamble
+        assert "def helper()" in case.preamble
+    # A named test does not inherit the module-level assertions.
+    assert "classify(1)" not in by_name["test_named"].runnable_module
 
 
 # --- suite records ---------------------------------------------------------
@@ -201,7 +273,7 @@ def build_suite():
         suite_id="s1",
         task_id="HumanEval/0",
         fault_id="HumanEval/0|original",
-        config=PYTHON_RECONSTRUCTION,
+        config=PUBLIC_YATE_FAITHFUL,
         system_prompt=build_python_system_prompt(),
         generation_prompt=build_python_generation_prompt(PROGRAM),
         raw_response=response,
@@ -232,7 +304,12 @@ def test_serialization_is_deterministic():
     first, second = build_suite().to_dict(), build_suite().to_dict()
     assert first == second
     assert json.dumps(first, sort_keys=True) == json.dumps(second, sort_keys=True)
-    assert first["config"]["provenance"]["generation_temperature"] == "INFERRED_ADAPTATION"
+    assert first["config"]["provenance"]["generation_temperature"] == (
+        "CONFIRMED_PUBLIC_IMPLEMENTATION"
+    )
+    assert first["config"]["target_paper"]["generation_temperature"] == (
+        "UNKNOWN_TARGET_PAPER_IMPLEMENTATION"
+    )
 
 
 def test_repair_iteration_round_trips():

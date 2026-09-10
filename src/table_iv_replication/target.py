@@ -25,6 +25,9 @@ import coverage
 
 _module_counter = itertools.count()
 
+#: Cap on stderr captured from a child, so a noisy target cannot exhaust memory.
+STDERR_LIMIT = 64 * 1024
+
 
 @dataclass(frozen=True)
 class ExecutionRecord:
@@ -213,7 +216,11 @@ def run_streamed_worker(
                 proc.kill()
                 stalled = True
                 break
-        stderr = proc.stderr.read().decode("utf-8", "replace") if proc.stderr else ""
+        # Bounded read: a target that floods stderr must not exhaust our memory.
+        stderr = (
+            proc.stderr.read(STDERR_LIMIT).decode("utf-8", "replace") if proc.stderr else ""
+        )
+        proc.kill()  # nothing more is wanted from it
         proc.wait()
 
         drain()
