@@ -74,25 +74,63 @@ convention and report both if the difference is material.
    `.error`. This matters: LLM-generated faults frequently crash rather than
    return a wrong value.
 
-## Reference oracle -- open decision A4
+## Reference oracle -- decision A4 (resolved)
 
 Fault triggering is decided by comparing a generated program against a reference
 implementation. HumanEval has two: the original dataset's canonical solution
 (shipped verbatim by PromptAnalysis) and EvalPlus's rewritten one.
 
-`scripts/audit_reference_equivalence.py` compared them behaviourally over all
-164 tasks and 124 253 EvalPlus inputs. They are **not** interchangeable: 142
-tasks are observationally equivalent on that domain, **17 compute different
-answers**, and **5** cannot be executed over the full domain because the
-original solution is too slow. Full method, comparator and per-task detail:
-`docs/data_provenance.md` section E; machine-readable results:
-`results/reference_equivalence.json`.
+**Primary oracle: the EvalPlus 0.3.1 HumanEval+ canonical implementation.**
 
-**This is unresolved and blocks fault classification.** The smoke infrastructure
-currently uses the EvalPlus canonical solution. Whichever reference is chosen
-must be recorded with every FTR number, and the 17 divergent tasks must be
-reported separately or excluded, because on those tasks the label "triggers the
-fault" depends on the choice rather than on the generated code.
+Rationale:
+
+- The target paper explicitly studies HumanEval+.
+- HumanEval+ is cited via EvalPlus together with the original HumanEval.
+- The paper states that the reference solution provided by the dataset serves
+  as ground truth.
+- Our audit found the original HumanEval reference disagrees with the EvalPlus
+  HumanEval+ reference on **17 tasks** and is inconclusive on another **5**
+  because the original solution is too slow for the extended input domain
+  (`docs/data_provenance.md` section E; `results/reference_equivalence.json`).
+
+**This is not a proof that EvalPlus's implementation is the one the authors
+used.** No artifact we hold states which reference they ran. A4 records a
+reasoned choice, not a verified fact.
+
+**Secondary sensitivity oracle: the original HumanEval canonical solution.**
+Every fault label is computed against both references and the disagreements are
+reported, so the 17 divergent tasks can never silently drive a result. See
+`scripts/classify_public_gpt5mini_faults.py` and
+`results/public_gpt5mini_fault_summary.json`.
+
+## Fault difficulty -- assumption A5
+
+The target paper defines fault difficulty as the complement of the proportion of
+tests that trigger the fault, then keeps implementations with difficulty below
+0.75 and retains the most difficult implementation per task. For HumanEval +
+GPT-5-mini it reports 84 retained faults.
+
+We compute:
+
+```
+trigger_ratio            = triggering inputs / observed inputs
+evalplus_domain_difficulty = 1 - trigger_ratio
+```
+
+**over the EvalPlus HumanEval+ input domain only**, and we call it
+`evalplus_domain_difficulty` everywhere -- never "fault difficulty".
+
+The two are not the same quantity. The paper measures difficulty over an
+**augmented** suite that includes additional LLM-generated differential tests;
+we do not have those artifacts. A different denominator gives a different
+difficulty, so a candidate at 0.80 here could sit either side of the paper's
+threshold there.
+
+Candidates at `evalplus_domain_difficulty >= 0.75` are reported as
+**`provisional_difficult_candidate`**, a diagnostic count only. They are *not*
+"selected Table IV faults", and no per-task selection is performed: with one
+generation per prompt variant instead of ten, there is no population to select
+the most difficult member from.
 
 ## Mutation adequacy -- experimental assumptions A2 and A3
 

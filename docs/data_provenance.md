@@ -223,10 +223,22 @@ is on the original side (`left=timeout right=ok`).
 They agreed on every input that *was* observed; inconclusive means unobserved,
 not different.
 
-### What this means, and what is not being decided here
+### Decision (A4): EvalPlus is the primary oracle
 
-Per the research policy, **no reference is being selected**. The audit's job was
-to find out whether the choice matters, and it does:
+The audit's job was to find out whether the choice matters. It does, so the
+choice was made deliberately and recorded as **decision A4**
+(`docs/experiment_plan.md`):
+
+- **Primary oracle: the EvalPlus 0.3.1 HumanEval+ canonical implementation**,
+  because the target paper studies HumanEval+ and states that the dataset's
+  reference solution is ground truth, and because the original reference
+  disagrees on 17 tasks and cannot be executed over the full domain on 5 more.
+- **Secondary sensitivity oracle: the original HumanEval canonical solution.**
+  Every fault label is computed against both and the disagreements reported.
+- **This is not proof that EvalPlus's implementation is the one the authors
+  used.** No artifact we hold says which reference they ran.
+
+What the audit established:
 
 - For **142 of 164 tasks** the two references are observationally equivalent on
   this domain, so either produces the same trigger labels there.
@@ -241,7 +253,8 @@ The divergences are edge cases the original HumanEval tests never reached --
 booleans counting as integers, `change_base(0, 3)`, `'[][][]'` — which is
 precisely what EvalPlus's extended inputs were built to expose. That is evidence
 about *which* reference is more careful, not proof of which one the Table IV
-authors used. **The decision is yours.**
+authors used, which is why the original reference is retained as a sensitivity
+oracle rather than discarded.
 
 ### Limitation
 
