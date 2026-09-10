@@ -283,6 +283,13 @@ states that:
 matching the Table IV experiment.** The paper reports 4,872 LLM-Plain tests for
 HumanEval; we have none, and we cannot regenerate them with the authors' tool.
 
+The **public Java/Kotlin** implementation has been fetched at a pinned commit and
+reconstructed in `docs/llm_plain_reconstruction.md`: prompts verbatim, temperature
+0.1, up to 5 repair iterations, one generation request, no coverage-feedback
+phase. That documents the *Java* workflow. It is evidence about the method's
+shape, not about the Table IV Python parameters, every one of which remains
+UNKNOWN.
+
 No Python LLM-Plain configuration is to be invented. If a substitute test
 generator is used later it must be named as a substitute, its prompt and model
 recorded, and its pool size reported next to the paper's 4,872 — never presented

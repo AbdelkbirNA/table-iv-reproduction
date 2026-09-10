@@ -1,0 +1,128 @@
+{
+  "artifacts": {
+    ".env.dev": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:13:47+00:00",
+      "repo_path": ".env.dev",
+      "sha256": "4566fa7da4faaf7ab8f81fbe624eec717eb3d8a42f7f3959342459b43ac053eb",
+      "size": 785,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/.env.dev"
+    },
+    "prompts/ablation_generate_simple.txt": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:13:44+00:00",
+      "repo_path": "prompts/ablation_generate_simple.txt",
+      "sha256": "70184778412ccb44fe0488bcecea6312fae80c0c927ba4da50cc6e1e3f6ae2b5",
+      "size": 184,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/prompts/ablation_generate_simple.txt"
+    },
+    "prompts/ablation_generate_simple_method_named.txt": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:13:44+00:00",
+      "repo_path": "prompts/ablation_generate_simple_method_named.txt",
+      "sha256": "3ff39dfcfef1e157e750c52fc6ea36cf9dcb026db31610edfdb9cebed2e94ab9",
+      "size": 300,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/prompts/ablation_generate_simple_method_named.txt"
+    },
+    "prompts/fix_errors.txt": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:13:45+00:00",
+      "repo_path": "prompts/fix_errors.txt",
+      "sha256": "0c64575edf5210f1ab798a915b5c5f719c7563880f0b71d7356a65318bae3d42",
+      "size": 241,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/prompts/fix_errors.txt"
+    },
+    "prompts/system.txt": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:13:44+00:00",
+      "repo_path": "prompts/system.txt",
+      "sha256": "69408c873c137bea7b2d3971e813d209e3f8b6cc7f80a7be8a2a000f8e866fab",
+      "size": 61,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/prompts/system.txt"
+    },
+    "src/main/java/com/mkonst/components/AbstractModelComponent.kt": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:15:29+00:00",
+      "repo_path": "src/main/java/com/mkonst/components/AbstractModelComponent.kt",
+      "sha256": "7e6f7730d4ecd0089d94d092c8609b3f6ef54aa197134136aba2ce5123cd1347",
+      "size": 678,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/src/main/java/com/mkonst/components/AbstractModelComponent.kt"
+    },
+    "src/main/java/com/mkonst/components/YatePlainErrorFixer.kt": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:13:46+00:00",
+      "repo_path": "src/main/java/com/mkonst/components/YatePlainErrorFixer.kt",
+      "sha256": "43e3798873bbc37eb0e964895ca6d670df8e4aa7a5f3bf070464805927b5872e",
+      "size": 2485,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/src/main/java/com/mkonst/components/YatePlainErrorFixer.kt"
+    },
+    "src/main/java/com/mkonst/components/YateUnitGenerator.kt": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:15:29+00:00",
+      "repo_path": "src/main/java/com/mkonst/components/YateUnitGenerator.kt",
+      "sha256": "be29d78d1cbeecb048754f599a70db4bc2f366b620b1fff5090217caa750bbde",
+      "size": 5304,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/src/main/java/com/mkonst/components/YateUnitGenerator.kt"
+    },
+    "src/main/java/com/mkonst/evaluation/YatePlainRunner.kt": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:13:46+00:00",
+      "repo_path": "src/main/java/com/mkonst/evaluation/YatePlainRunner.kt",
+      "sha256": "94b25494b56ab22abcf8419404374c0c9e46330baa7a3741f6b354179a714614",
+      "size": 3298,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/src/main/java/com/mkonst/evaluation/YatePlainRunner.kt"
+    },
+    "src/main/java/com/mkonst/evaluation/ablation/SimpleUnitTestGenerator.kt": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:13:45+00:00",
+      "repo_path": "src/main/java/com/mkonst/evaluation/ablation/SimpleUnitTestGenerator.kt",
+      "sha256": "d5b9e6665b7a45d43aa2aefcacec6e8520c3dd341c95186260a5814f508691d6",
+      "size": 2895,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/src/main/java/com/mkonst/evaluation/ablation/SimpleUnitTestGenerator.kt"
+    },
+    "src/main/java/com/mkonst/models/ChatOpenAIModel.kt": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:13:47+00:00",
+      "repo_path": "src/main/java/com/mkonst/models/ChatOpenAIModel.kt",
+      "sha256": "168e3f140082dd9fff82c7a045ef0ffe8fd0c55a4289d37d32b5be444304423c",
+      "size": 6055,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/src/main/java/com/mkonst/models/ChatOpenAIModel.kt"
+    },
+    "src/main/java/com/mkonst/runners/YateAbstractRunner.kt": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:15:28+00:00",
+      "repo_path": "src/main/java/com/mkonst/runners/YateAbstractRunner.kt",
+      "sha256": "9afe7262afa94fb83116586ea43058383ac1220e60574c9c6e85e45df8365bc1",
+      "size": 15902,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/src/main/java/com/mkonst/runners/YateAbstractRunner.kt"
+    },
+    "src/main/java/com/mkonst/services/PromptService.java": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:13:47+00:00",
+      "repo_path": "src/main/java/com/mkonst/services/PromptService.java",
+      "sha256": "7e921b221cf6b15b554a91ae40b5f191159314dedd0a074a664df06d0ac3d125",
+      "size": 2391,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/src/main/java/com/mkonst/services/PromptService.java"
+    },
+    "src/main/java/com/mkonst/types/CodeResponse.kt": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:15:30+00:00",
+      "repo_path": "src/main/java/com/mkonst/types/CodeResponse.kt",
+      "sha256": "f097d3ce1815aa380f820c2f630d237ae63f689c8aa22e5d582d21b90e1bb2d3",
+      "size": 1639,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/src/main/java/com/mkonst/types/CodeResponse.kt"
+    },
+    "src/main/java/com/mkonst/types/YateResponse.kt": {
+      "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+      "downloaded_at": "2026-09-10T23:15:29+00:00",
+      "repo_path": "src/main/java/com/mkonst/types/YateResponse.kt",
+      "sha256": "2d72cf70f91ad9ef9374b56953718d8b310f8e2113dedd54c5902f8e4ca0fae3",
+      "size": 1961,
+      "url": "https://raw.githubusercontent.com/michaelkonstantinou/yate-java/82b547717e7298b5c541c6065bf46bbef61727c0/src/main/java/com/mkonst/types/YateResponse.kt"
+    }
+  },
+  "commit": "82b547717e7298b5c541c6065bf46bbef61727c0",
+  "note": "Public YATE (Java/Kotlin) implementation of LLM-Plain, pinned. Evidence about the Plain-LLM workflow; NOT the Table IV Python implementation, which is not publicly available. See docs/llm_plain_reconstruction.md.",
+  "repo": "michaelkonstantinou/yate-java",
+  "source": "https://github.com/michaelkonstantinou/yate-java/tree/82b547717e7298b5c541c6065bf46bbef61727c0"
+}
