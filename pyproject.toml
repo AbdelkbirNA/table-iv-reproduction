@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "table-iv-reproduction"
+version = "0.1.0"
+description = "Reproduction scaffold for Table IV of Hamidi et al. (2026)"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "coverage==7.15.4",
+  "evalplus==0.3.1",
+  "mutmut==3.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.1.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

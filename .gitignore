@@ -1,0 +1,21 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
+mutants/
+*.sqlite
+.DS_Store
+results/raw/*
+!results/raw/.gitkeep
+results/processed/*
+!results/processed/.gitkeep
+
+*.egg-info/
+
+# Fetched artifacts: reproducible via scripts/fetch_related_artifacts.py.
+# The manifest (provenance: commit, sizes, checksums) is kept in git.
+data/external/**
+!data/external/
+!data/external/*/
+!data/external/*/manifest.json

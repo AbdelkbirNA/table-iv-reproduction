@@ -1,0 +1,40 @@
+{
+  "artifacts": {
+    "HumanEval.jsonl": {
+      "commit": "99f5d447aa55167e177069d90f00f81933002e05",
+      "downloaded_at": "2026-09-10T21:14:38+00:00",
+      "repo_path": "datasets/humanEval/HumanEval.jsonl",
+      "sha256": "1d49078ba3e2b196b9344535bef34a43021f038fad9561d6ee7c53450609a6a2",
+      "size": 214438,
+      "url": "https://raw.githubusercontent.com/Amal-AK/PromptAnalysis/99f5d447aa55167e177069d90f00f81933002e05/datasets/humanEval/HumanEval.jsonl"
+    },
+    "HumanEval_US_mutated.jsonl": {
+      "commit": "99f5d447aa55167e177069d90f00f81933002e05",
+      "downloaded_at": "2026-09-10T21:14:37+00:00",
+      "repo_path": "datasets/humanEval/HumanEval_US_mutated.jsonl",
+      "sha256": "1a0a995f130b15c347d1c7cbeea5fe4b155252364965586ec789ede04be051c1",
+      "size": 168532,
+      "url": "https://raw.githubusercontent.com/Amal-AK/PromptAnalysis/99f5d447aa55167e177069d90f00f81933002e05/datasets/humanEval/HumanEval_US_mutated.jsonl"
+    },
+    "gpt-5-mini__HumanEval.json": {
+      "commit": "99f5d447aa55167e177069d90f00f81933002e05",
+      "downloaded_at": "2026-09-10T21:14:38+00:00",
+      "repo_path": "inference_results/openai/gpt-5-mini__HumanEval.json",
+      "sha256": "42f30fcd5d5309a602737105d4b7b14ffbc802977818f1fbbe10ef6550511ac7",
+      "size": 624803,
+      "url": "https://raw.githubusercontent.com/Amal-AK/PromptAnalysis/99f5d447aa55167e177069d90f00f81933002e05/inference_results/openai/gpt-5-mini__HumanEval.json"
+    },
+    "gpt-5-mini__HumanEval_US_with_tests.json": {
+      "commit": "99f5d447aa55167e177069d90f00f81933002e05",
+      "downloaded_at": "2026-09-10T21:14:39+00:00",
+      "repo_path": "inference_results/openai/gpt-5-mini__HumanEval_US_with_tests.json",
+      "sha256": "1ff9ab3182e77861f71ca886215e4836e7bdf9e13834f1da2ac68eb7fd625546",
+      "size": 679867,
+      "url": "https://raw.githubusercontent.com/Amal-AK/PromptAnalysis/99f5d447aa55167e177069d90f00f81933002e05/inference_results/openai/gpt-5-mini__HumanEval_US_with_tests.json"
+    }
+  },
+  "commit": "99f5d447aa55167e177069d90f00f81933002e05",
+  "note": "Replication package of related work cited by the Table IV paper, NOT the Table IV replication package. See docs/data_provenance.md.",
+  "repo": "Amal-AK/PromptAnalysis",
+  "source": "https://github.com/Amal-AK/PromptAnalysis/tree/99f5d447aa55167e177069d90f00f81933002e05"
+}

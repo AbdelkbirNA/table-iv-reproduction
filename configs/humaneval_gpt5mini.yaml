@@ -1,0 +1,19 @@
+experiment:
+  benchmark: humaneval
+  fault_model: gpt-5-mini
+  repetitions: 100
+  seed: 20260910
+
+paper_target:
+  mutation: {ftr: 0.393, fdr: 0.000}
+  branch: {ftr: 0.450, fdr: 0.000}
+  statement: {ftr: 0.385, fdr: 0.000}
+
+artifacts:
+  test_pool_source: TBD
+  faulty_implementations_source: TBD
+
+instrumentation:
+  statement_branch_tool: coverage.py==7.15.4
+  mutation_tool: mutmut==3.7.0
+  mutation_tool_is_simplifying_assumption: true
