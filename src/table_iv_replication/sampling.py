@@ -1,9 +1,27 @@
 from __future__ import annotations
 
+import hashlib
 import random
 from collections.abc import Iterable, Sequence
 
 from .types import TestObservation
+
+
+def derive_seed(base: int, key: str) -> int:
+    """Derive an independent seed for `key` from a single run-level `base` seed.
+
+    :func:`run_repetitions` seeds its own master RNG, so calling it once per fault
+    with the *same* seed gives every equal-sized pool the identical permutation at
+    every iteration index. Marginal per-fault rates stay unbiased, but the
+    per-iteration rates across faults become correlated, which misstates their
+    spread. Pass ``seed=derive_seed(base, fault_id)`` to decouple them while
+    keeping the whole run reproducible.
+
+    Uses SHA-256 rather than :func:`hash`, which is salted per process and would
+    make runs irreproducible.
+    """
+    digest = hashlib.sha256(key.encode("utf-8")).digest()[:8]
+    return base ^ int.from_bytes(digest, "big")
 
 
 def full_pool_adequacy(tests: Iterable[TestObservation]) -> frozenset[str]:

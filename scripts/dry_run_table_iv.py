@@ -18,6 +18,7 @@ in the chain is connected and deterministic:
 """
 
 import argparse
+import math
 import statistics
 import sys
 from pathlib import Path
@@ -31,9 +32,17 @@ from table_iv_replication.generated_test_runner import (  # noqa: E402
     to_test_observation,
 )
 from table_iv_replication.llm_plain_protocol import split_test_cases  # noqa: E402
-from table_iv_replication.metrics import aggregate_rates  # noqa: E402
+from table_iv_replication.metrics import (  # noqa: E402
+    aggregate_rates,
+    suite_detects_fault,
+    suite_triggers_fault,
+)
 from table_iv_replication.mutation_coverage import measure_mutation_source  # noqa: E402
-from table_iv_replication.sampling import full_pool_adequacy, run_repetitions  # noqa: E402
+from table_iv_replication.sampling import (  # noqa: E402
+    derive_seed,
+    full_pool_adequacy,
+    run_repetitions,
+)
 
 ENTRY_POINT = "classify"
 
@@ -104,6 +113,42 @@ def test_negative():
             "test_negative": [[-1]],
         },
     },
+    # The point of this fault: its only triggering input is coverage-redundant.
+    # x == 1 covers exactly the statements and branches that x == -3 already
+    # covers, so a statement- or branch-adequate suite can reach full-pool
+    # adequacy without it -- but it uniquely kills the `x >= 1` mutant, so a
+    # mutation-adequate suite must retain it. That is the asymmetry Table IV is
+    # about, and here it is produced by measurement, not by hand.
+    "fault_d_boundary_only": {
+        "source": """def classify(x):
+    if x > 1:
+        return 10
+    if x == 0:
+        return 15
+    return 20
+""",
+        "tests": """def test_large_positive():
+    assert classify(5) == 10
+
+
+def test_zero():
+    assert classify(0) == 15
+
+
+def test_negative():
+    assert classify(-3) == 20
+
+
+def test_boundary():
+    assert classify(1) == 10
+""",
+        "inputs": {
+            "test_large_positive": [[5]],
+            "test_zero": [[0]],
+            "test_negative": [[-3]],
+            "test_boundary": [[1]],
+        },
+    },
     "fault_c_negative_branch": {
         "source": """def classify(x):
     if x > 0:
@@ -131,6 +176,16 @@ def test_positive_only():
 
 def rule(title: str) -> None:
     print(f"\n{'=' * 78}\n{title}\n{'=' * 78}")
+
+
+def _is_minimal(suite) -> bool:
+    """Every test in the suite added at least one item when it was selected."""
+    covered: set[str] = set()
+    for test in suite:
+        if not test.adequacy_items - covered:
+            return False
+        covered |= test.adequacy_items
+    return True
 
 
 def adequacy_for_tests(source: str, tests_inputs: dict[str, list], timeout: float):
@@ -196,10 +251,10 @@ def main(argv=None) -> int:
         )
         behaviour[fault_id] = results
 
-        print(f"{'test':<26}{'ref':<10}{'faulty':<20}{'trig':<7}{'det':<6}verdict")
+        print(f"{'test':<26}{'reference':<20}{'faulty':<20}{'trig':<7}{'det':<6}verdict")
         for result in results:
             print(
-                f"{result.test_name:<26}{result.reference_run.status.value:<10}"
+                f"{result.test_name:<26}{result.reference_run.status.value:<20}"
                 f"{result.faulty_run.status.value:<20}"
                 f"{str(result.triggered):<7}{str(result.detects_fault):<6}"
                 f"{result.verdict.value}"
@@ -235,13 +290,15 @@ def main(argv=None) -> int:
             print(f"{fault_id:<26}{criterion:<12}"
                   f"{len(full_pool_adequacy(pool)):<12}{len(pool)}")
 
-    def sample(criterion, seed):
-        """Mean FTR/FDR/suite size over `repetitions` randomized suites."""
+    def sample(criterion, base_seed):
+        """Sample `repetitions` adequate suites per fault; return stats + suites."""
         suites_by_fault = {
-            fault_id: run_repetitions(pool, repetitions=args.repetitions, seed=seed)
+            fault_id: run_repetitions(
+                pool, repetitions=args.repetitions, seed=derive_seed(base_seed, fault_id)
+            )
             for fault_id, pool in observations[criterion].items()
         }
-        ftrs, fdrs, sizes, detect_implies_trigger = [], [], [], True
+        ftrs, fdrs, sizes = [], [], []
         for iteration in range(args.repetitions):
             iteration_suites = {
                 fault_id: suites[iteration] for fault_id, suites in suites_by_fault.items()
@@ -250,26 +307,49 @@ def main(argv=None) -> int:
             ftrs.append(ftr)
             fdrs.append(fdr)
             sizes.extend(len(suite) for suite in iteration_suites.values())
-            detect_implies_trigger &= fdr <= ftr
-        return (
-            statistics.fmean(ftrs),
-            statistics.fmean(fdrs),
-            statistics.fmean(sizes),
-            detect_implies_trigger,
-        )
+        return {
+            "mean_ftr": statistics.fmean(ftrs),
+            "mean_fdr": statistics.fmean(fdrs),
+            "mean_size": statistics.fmean(sizes),
+            "ftrs": ftrs,
+            "fdrs": fdrs,
+            "suites": suites_by_fault,
+        }
 
     rule(f"RANDOMIZED SAMPLING -- {args.repetitions} ITERATIONS PER CRITERION")
-    summary = {}
+    summary = {criterion: sample(criterion, args.seed) for criterion in criteria}
     print(f"{'criterion':<12}{'mean FTR':>10}{'mean FDR':>10}{'mean suite size':>18}")
     for criterion in criteria:
-        summary[criterion] = sample(criterion, args.seed)
-        print(f"{criterion:<12}{summary[criterion][0]:>10.4f}"
-              f"{summary[criterion][1]:>10.4f}{summary[criterion][2]:>18.4f}")
+        stats = summary[criterion]
+        print(f"{criterion:<12}{stats['mean_ftr']:>10.4f}"
+              f"{stats['mean_fdr']:>10.4f}{stats['mean_size']:>18.4f}")
+    print("\nRaw, unrounded:")
+    for criterion in criteria:
+        stats = summary[criterion]
+        print(f"  {criterion:<12} FTR={stats['mean_ftr']!r}  FDR={stats['mean_fdr']!r}"
+              f"  size={stats['mean_size']!r}")
+
+    rule("PER-FAULT TRIGGER/DETECTION RATE BY CRITERION")
+    print(f"{'fault':<26}" + "".join(f"{c + ' FTR':>16}" for c in criteria))
+    for fault_id in FAULTS:
+        cells = ""
+        for criterion in criteria:
+            suites = summary[criterion]["suites"][fault_id]
+            rate = sum(suite_triggers_fault(s) for s in suites) / args.repetitions
+            cells += f"{rate:>16.4f}"
+        print(f"{fault_id:<26}{cells}")
 
     # Prove determinism rather than asserting it: same seed, same numbers.
     repeated = {criterion: sample(criterion, args.seed) for criterion in criteria}
 
     rule("PIPELINE CHECKS")
+    ftr_values = [summary[criterion]["mean_ftr"] for criterion in criteria]
+    every_suite = [
+        (criterion, fault_id, suite)
+        for criterion in criteria
+        for fault_id, suites in summary[criterion]["suites"].items()
+        for suite in suites
+    ]
     checks = [
         (
             "every criterion sampled the same fault set",
@@ -285,9 +365,12 @@ def main(argv=None) -> int:
             ),
         ),
         (
-            "at least one criterion yields a different mean FTR than another",
-            len({round(summary[c][0], 6) for c in criteria}) > 1
-            or len({round(summary[c][2], 6) for c in criteria}) > 1,
+            "criterion choice changes mean FTR (not merely suite size)",
+            any(
+                not math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-12)
+                for a in ftr_values
+                for b in ftr_values
+            ),
         ),
         (
             "detection implies triggering for every observation",
@@ -301,11 +384,52 @@ def main(argv=None) -> int:
         ),
         (
             "FDR never exceeds FTR in any iteration",
-            all(summary[criterion][3] for criterion in criteria),
+            all(
+                fdr <= ftr
+                for criterion in criteria
+                for ftr, fdr in zip(summary[criterion]["ftrs"], summary[criterion]["fdrs"])
+            ),
+        ),
+        (
+            "every sampled suite reaches full-pool adequacy exactly",
+            all(
+                full_pool_adequacy(suite) == full_pool_adequacy(observations[criterion][fault_id])
+                for criterion, fault_id, suite in every_suite
+            ),
+        ),
+        (
+            "no sampled suite repeats a test",
+            all(
+                len({t.test_id for t in suite}) == len(suite)
+                for _, _, suite in every_suite
+            ),
+        ),
+        (
+            "no sampled suite contains a test that adds no adequacy item",
+            all(
+                _is_minimal(suite) for _, _, suite in every_suite
+            ),
+        ),
+        (
+            "a suite detects a fault only if one of its tests does",
+            all(
+                suite_detects_fault(suite) == any(t.detects_fault for t in suite)
+                and suite_triggers_fault(suite) == any(t.triggers_fault for t in suite)
+                for _, _, suite in every_suite
+            ),
         ),
         (
             "rerunning with the same seed reproduces every number",
-            repeated == summary,
+            all(
+                repeated[c]["mean_ftr"] == summary[c]["mean_ftr"]
+                and repeated[c]["mean_fdr"] == summary[c]["mean_fdr"]
+                and repeated[c]["mean_size"] == summary[c]["mean_size"]
+                and [[t.test_id for t in s] for f in repeated[c]["suites"]
+                     for s in repeated[c]["suites"][f]]
+                == [[t.test_id for t in s] for f in summary[c]["suites"]
+                    for s in summary[c]["suites"][f]]
+                for c in criteria
+            ),
         ),
     ]
     ok = True

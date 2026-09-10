@@ -226,6 +226,34 @@ specification (not the faulty code), repairing runtime errors up to five times.
 Those are different artifacts answering different questions; RQ3 output must
 never feed a Table IV number.
 
+## Sampler properties (audited 2026-09-11)
+
+`greedy_random_sample` / `run_repetitions` were audited against the protocol.
+Confirmed: each repetition starts from an empty suite; candidate order is freshly
+shuffled from the full pool; a test is retained iff it adds at least one adequacy
+item; the walk breaks exactly when covered adequacy equals the full-pool target;
+a discarded test is never reconsidered within a repetition; and 100 repetitions
+are 100 independent draws within a fault. Three properties are worth recording
+because they affect how results may be reported.
+
+1. **Suites are greedily minimal, not minimum set covers.** Every retained test
+   added an item *when selected*, but an earlier test can become redundant later:
+   `[t1={a}, t3={a,b}]` is a legitimate outcome even though `{t3}` alone is
+   adequate. Mean suite sizes from this sampler must never be described as
+   minimal.
+2. **Seeds must be derived per fault.** `run_repetitions` seeds its own master
+   RNG, so calling it once per fault with the same seed gives every equal-sized
+   pool the identical permutation at each iteration index. Marginal per-fault
+   rates stay unbiased, but per-iteration rates across faults become correlated,
+   which misstates their spread. Use
+   `sampling.derive_seed(base_seed, fault_id)`; `hash()` is unusable, being
+   salted per process.
+3. **A test with no adequacy items can never be selected**, so it can never
+   contribute to FTR or FDR under any criterion -- including a test that triggers
+   the fault. A generated test that never calls the entry point has empty
+   coverage, and is therefore invisible to sampling. Worth watching once real
+   generated pools arrive.
+
 ## Mutation adequacy -- experimental assumptions A2 and A3
 
 ### A2: mutmut 3.7.0 is a provisional engine, not the authors' tool
