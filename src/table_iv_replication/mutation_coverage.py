@@ -29,18 +29,16 @@ from __future__ import annotations
 
 import ast
 import contextlib
-import json
-import pickle
 import re
 import shutil
-import subprocess
-import sys
 import tempfile
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+from .target import run_streamed_worker
 
 ORIGINAL = ""
 TRAMPOLINE = "~trampoline"
@@ -279,23 +277,6 @@ def generate_mutants(source: str, entry_point: str) -> tuple[list[Mutant], str]:
 # --------------------------------------------------------------------------
 
 
-def _drain(path: Path) -> dict[tuple[str, int], Outcome]:
-    results: dict[tuple[str, int], Outcome] = {}
-    if not path.exists():
-        return results
-    with path.open(encoding="utf-8") as handle:
-        for line in handle:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                mutant_id, index, outcome = json.loads(line)
-            except json.JSONDecodeError:
-                break  # torn final line from a killed worker
-            results[(mutant_id, index)] = Outcome.from_json(outcome)
-    return results
-
-
 def _execute(
     plan: dict[str, Any],
     items: list[tuple[str, int]],
@@ -303,56 +284,30 @@ def _execute(
     *,
     stall_timeout: float,
 ) -> tuple[dict[tuple[str, int], Outcome], list[tuple[str, int, Outcome]]]:
-    """Run `items` in a child process, restarting past anything that wedges it.
+    """Run every (mutant, input) pair in an isolated child process.
 
-    The child streams one flushed line per completed item, so a kill costs at
-    most the item in flight. That item is recorded as a failure outcome and the
-    run continues -- a pathological mutant cannot stall the experiment.
+    Orchestration -- streaming, stall detection, restart past a wedged item --
+    is shared with the reference-equivalence audit; see
+    :func:`table_iv_replication.target.run_streamed_worker`.
     """
-    results: dict[tuple[str, int], Outcome] = {}
+    raw, worker_failures = run_streamed_worker(
+        WORKER, plan, items, work, stall_timeout=stall_timeout
+    )
+
     failures: list[tuple[str, int, Outcome]] = []
-    pending = list(items)
-    plan_path, out_path = work / "plan.pkl", work / "results.jsonl"
+    for (mutant_id, index), reason in worker_failures:
+        kind, _, detail = reason.partition(": ")
+        failures.append((mutant_id, index, Outcome(kind, detail[:200])))
 
-    while pending:
-        out_path.write_text("", encoding="utf-8")
-        with plan_path.open("wb") as handle:
-            pickle.dump({**plan, "items": pending}, handle)
-
-        proc = subprocess.Popen(
-            [sys.executable, str(WORKER), str(plan_path), str(out_path)],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-        )
-        stalled = False
-        size, last_progress = -1, time.monotonic()
-        while proc.poll() is None:
-            time.sleep(0.02)
-            current = out_path.stat().st_size if out_path.exists() else 0
-            if current != size:
-                size, last_progress = current, time.monotonic()
-            elif time.monotonic() - last_progress > stall_timeout:
-                proc.kill()
-                stalled = True
-                break
-        stderr = proc.stderr.read().decode("utf-8", "replace") if proc.stderr else ""
-        proc.wait()
-
-        results.update(_drain(out_path))
-        remaining = [item for item in pending if item not in results]
-        if not remaining:
-            break
-
-        culprit = remaining[0]
-        if stalled:
-            outcome = Outcome("timeout", "")
+    results: dict[tuple[str, int], Outcome] = {}
+    for key, payload in raw.items():
+        mutant_id, index = key
+        if payload is None:
+            results[key] = next(
+                outcome for mid, idx, outcome in failures if (mid, idx) == key
+            )
         else:
-            tail = stderr.strip().splitlines()
-            outcome = Outcome("crash", tail[-1][:200] if tail else "")
-        results[culprit] = outcome
-        failures.append((culprit[0], culprit[1], outcome))
-        pending = remaining[1:]
-
+            results[key] = Outcome.from_json(payload)
     return results, failures
 
 

@@ -142,3 +142,93 @@ def run_under_coverage(
         lines=frozenset(lines),
         arcs=frozenset(arcs),
     )
+
+
+# --------------------------------------------------------------------------
+# isolated streamed execution
+# --------------------------------------------------------------------------
+
+
+def run_streamed_worker(
+    worker: Path,
+    plan: dict[str, Any],
+    items: Sequence[Sequence[Any]],
+    work: Path,
+    *,
+    stall_timeout: float,
+) -> tuple[dict[tuple, Any], list[tuple[tuple, str]]]:
+    """Run `items` in a child process, restarting past anything that wedges it.
+
+    The child is launched as ``python <worker> <plan.pkl> <results.jsonl>``,
+    receives ``plan`` (with ``items`` set to whatever is still pending) and must
+    write one flushed JSON line ``[key, payload]`` per completed item, where
+    ``key`` is the item. A kill therefore costs at most the item in flight; that
+    item is recorded as a failure and the run continues on the remainder, so a
+    pathological target cannot stall the experiment.
+
+    Returns ``({tuple(key): payload}, [(tuple(key), "timeout"|"crash: ...")])``.
+    """
+    import json
+    import pickle
+    import subprocess
+    import time
+
+    results: dict[tuple, Any] = {}
+    failures: list[tuple[tuple, str]] = []
+    pending = [tuple(item) for item in items]
+    plan_path, out_path = work / "plan.pkl", work / "results.jsonl"
+
+    def drain() -> None:
+        if not out_path.exists():
+            return
+        with out_path.open(encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    key, payload = json.loads(line)
+                except (json.JSONDecodeError, ValueError):
+                    break  # torn final line from a killed worker
+                results[tuple(key)] = payload
+
+    while pending:
+        out_path.write_text("", encoding="utf-8")
+        with plan_path.open("wb") as handle:
+            pickle.dump({**plan, "items": pending}, handle)
+
+        proc = subprocess.Popen(
+            [sys.executable, str(worker), str(plan_path), str(out_path)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+        )
+        stalled = False
+        size, last_progress = -1, time.monotonic()
+        while proc.poll() is None:
+            time.sleep(0.02)
+            current = out_path.stat().st_size if out_path.exists() else 0
+            if current != size:
+                size, last_progress = current, time.monotonic()
+            elif time.monotonic() - last_progress > stall_timeout:
+                proc.kill()
+                stalled = True
+                break
+        stderr = proc.stderr.read().decode("utf-8", "replace") if proc.stderr else ""
+        proc.wait()
+
+        drain()
+        remaining = [item for item in pending if item not in results]
+        if not remaining:
+            break
+
+        culprit = remaining[0]
+        if stalled:
+            reason = "timeout"
+        else:
+            tail = stderr.strip().splitlines()
+            reason = f"crash: {tail[-1][:200]}" if tail else "crash"
+        failures.append((culprit, reason))
+        results[culprit] = None
+        pending = remaining[1:]
+
+    return results, failures

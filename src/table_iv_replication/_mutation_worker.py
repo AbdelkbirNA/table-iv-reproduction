@@ -10,9 +10,9 @@ Protocol
 The plan pickle carries the target sources, the entry point, the test inputs and
 a list of work items ``(mutant_id, input_index)``; ``mutant_id`` is "" for the
 clean original module and "~trampoline" for the mutated module with no mutant
-selected. One JSON line is written and flushed per completed item, so if the
-parent has to kill this process the partial results survive and the item it died
-on is identifiable by absence.
+selected. One JSON line ``[[mutant_id, input_index], outcome]`` is written and flushed per
+completed item, so if the parent has to kill this process the partial results
+survive and the item it died on is identifiable by absence.
 """
 
 import importlib.util
@@ -73,7 +73,7 @@ def main(plan_path, out_path):
                 fn = mutants_fn
                 mutants._mutmut_select(None if mutant_id == TRAMPOLINE else mutant_id)
             outcome = _outcome(fn, inputs[input_index], timeout)
-            out.write(json.dumps([mutant_id, input_index, outcome]) + "\n")
+            out.write(json.dumps([[mutant_id, input_index], outcome]) + "\n")
             out.flush()
     return 0
 

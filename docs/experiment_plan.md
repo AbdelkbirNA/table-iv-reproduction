@@ -74,6 +74,26 @@ convention and report both if the difference is material.
    `.error`. This matters: LLM-generated faults frequently crash rather than
    return a wrong value.
 
+## Reference oracle -- open decision A4
+
+Fault triggering is decided by comparing a generated program against a reference
+implementation. HumanEval has two: the original dataset's canonical solution
+(shipped verbatim by PromptAnalysis) and EvalPlus's rewritten one.
+
+`scripts/audit_reference_equivalence.py` compared them behaviourally over all
+164 tasks and 124 253 EvalPlus inputs. They are **not** interchangeable: 142
+tasks are observationally equivalent on that domain, **17 compute different
+answers**, and **5** cannot be executed over the full domain because the
+original solution is too slow. Full method, comparator and per-task detail:
+`docs/data_provenance.md` section E; machine-readable results:
+`results/reference_equivalence.json`.
+
+**This is unresolved and blocks fault classification.** The smoke infrastructure
+currently uses the EvalPlus canonical solution. Whichever reference is chosen
+must be recorded with every FTR number, and the 17 divergent tasks must be
+reported separately or excluded, because on those tasks the label "triggers the
+fault" depends on the choice rather than on the generated code.
+
 ## Mutation adequacy -- experimental assumptions A2 and A3
 
 ### A2: mutmut 3.7.0 is a provisional engine, not the authors' tool
