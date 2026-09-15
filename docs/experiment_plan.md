@@ -30,6 +30,10 @@ Consequences for the pipeline:
 - Statement and branch adequacy items are line numbers / branch arcs **of the
   faulty source file**. Two faults for the same task generally have different
   line numbering, so adequacy items are only comparable within one fault.
+- Branch adequacy is executed lines **∪** executed branch arcs, not arcs alone,
+  so branch adequacy subsumes statement adequacy exactly as coverage.py's own
+  branch metric does. Arcs alone let the *empty* suite be adequate for any
+  branchless program; see `branch_coverage.py` and report §9.1.
 - The canonical implementation is used **only for behavioural comparison**:
   running it on an input yields the expected output, which decides whether a
   test triggers the fault (`TestObservation.triggers_fault`). It never
