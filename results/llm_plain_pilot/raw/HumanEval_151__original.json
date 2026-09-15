@@ -1,0 +1,77 @@
+{
+  "pilot_label": "RECONSTRUCTION PILOT -- not a Table IV reproduction",
+  "candidate_id": "HumanEval/151|original",
+  "task_id": "HumanEval/151",
+  "prompt_variant": "original",
+  "source_artifact": "gpt-5-mini__HumanEval.json",
+  "entry_point": "double_the_difference",
+  "faulty_source_sha256": "05cda7fcd8902c1f3d50610b6d55b18f66c57e9612d7b0af6d5fb7cfae3b3e06",
+  "evalplus_domain_difficulty": 0.9980119284294234,
+  "system_prompt": "You are a tool used by Python Developers to generate tests.",
+  "user_prompt": "The following module is missing unit tests. Please generate all tests needed to achieve 100% code coverage using Python and plain pytest-style assert functions (no framework imports). Return only the code\n\ndef double_the_difference(lst):\n    \"\"\"\n    Given a list of numbers, return the sum of squares of the numbers\n    in the list that are odd. Ignore numbers that are negative or not integers.\n\n    Examples:\n    double_the_difference([1, 3, 2, 0]) == 1 + 9 + 0 + 0 = 10\n    double_the_difference([-1, -2, 0]) == 0\n    double_the_difference([9, -2]) == 81\n    double_the_difference([0]) == 0\n\n    If the input list is empty, return 0.\n    \"\"\"\n    total = 0\n    for x in lst:\n        # Accept only true integers (exclude booleans), non-negative, and odd\n        if isinstance(x, int) and not isinstance(x, bool) and x >= 0 and (x % 2 == 1):\n            total += x * x\n    return total",
+  "config": {
+    "label": "Python reconstruction, public-YATE-faithful (RECONSTRUCTION, not reproduction)",
+    "values": {
+      "model_name": null,
+      "generation_temperature": 0.1,
+      "max_repair_iterations": 5,
+      "generation_requests_per_program": 1,
+      "test_framework": "plain pytest-style assert functions (no framework imports)",
+      "language": "Python",
+      "include_program_under_test_in_prompt": true,
+      "uses_coverage_feedback": false,
+      "repairs_assertion_failures": true
+    },
+    "provenance": {
+      "model_name": "UNKNOWN",
+      "generation_temperature": "CONFIRMED_PUBLIC_IMPLEMENTATION",
+      "max_repair_iterations": "CONFIRMED_PUBLIC_IMPLEMENTATION",
+      "generation_requests_per_program": "CONFIRMED_PUBLIC_IMPLEMENTATION",
+      "test_framework": "INFERRED_ADAPTATION",
+      "language": "CONFIRMED_TARGET_PAPER",
+      "include_program_under_test_in_prompt": "CONFIRMED_PUBLIC_IMPLEMENTATION",
+      "uses_coverage_feedback": "CONFIRMED_PUBLIC_IMPLEMENTATION",
+      "repairs_assertion_failures": "CONFIRMED_PUBLIC_IMPLEMENTATION"
+    },
+    "target_paper": {
+      "model_name": "UNKNOWN_TARGET_PAPER_IMPLEMENTATION",
+      "generation_temperature": "UNKNOWN_TARGET_PAPER_IMPLEMENTATION",
+      "max_repair_iterations": "UNKNOWN_TARGET_PAPER_IMPLEMENTATION",
+      "generation_requests_per_program": "UNKNOWN_TARGET_PAPER_IMPLEMENTATION",
+      "test_framework": "UNKNOWN_TARGET_PAPER_IMPLEMENTATION",
+      "language": "CONFIRMED_TARGET_PAPER",
+      "include_program_under_test_in_prompt": "UNKNOWN_TARGET_PAPER_IMPLEMENTATION",
+      "uses_coverage_feedback": "UNKNOWN_TARGET_PAPER_IMPLEMENTATION",
+      "repairs_assertion_failures": "UNKNOWN_TARGET_PAPER_IMPLEMENTATION"
+    },
+    "notes": {
+      "model_name": "must be chosen and recorded explicitly before any generation run",
+      "generation_temperature": "0.1, hard-coded in ChatOpenAIModel; paper is silent",
+      "max_repair_iterations": "YatePlainRunner default 5; paper is silent",
+      "test_framework": "bare `def test_*(): assert ...` functions: collectible by pytest, and also callable directly by our isolated worker without a framework dependency",
+      "repairs_assertion_failures": "TRUE, matching the public implementation: fixErrors collects errors with includeCompilingTests=true and feeds them to fix_errors, so a failing assertion is repaired like a compile error. Consequence to keep in view: on a faulty program this can bias the oracle toward the faulty behaviour, which is the very effect the paper's RQ3 investigates. Whether the unpublished Python implementation did this is UNKNOWN."
+    }
+  },
+  "repair_requests_made": 0,
+  "reused_from_cache": false,
+  "api": {
+    "model_requested": "gpt-5-mini-2025-08-07",
+    "model_returned": null,
+    "response_text": null,
+    "finish_reason": null,
+    "response_id": null,
+    "created": null,
+    "system_fingerprint": null,
+    "temperature_requested": 0.1,
+    "temperature_sent": 0.1,
+    "usage": {},
+    "requested_at": "2026-09-15T11:20:47+00:00",
+    "completed_at": "2026-09-15T11:20:48+00:00",
+    "http_requests_made": 1,
+    "api_rejected_parameters": [],
+    "api_errors": [
+      "BadRequestError: Error code: 400"
+    ],
+    "error": "BadRequestError: Error code: 400"
+  }
+}

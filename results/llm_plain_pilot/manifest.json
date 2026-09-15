@@ -1,0 +1,51 @@
+{
+  "pilot_label": "RECONSTRUCTION PILOT -- not a Table IV reproduction",
+  "model_requested": "gpt-5-mini-2025-08-07",
+  "model_provenance": "INFERRED_ADAPTATION",
+  "temperature_requested": 0.1,
+  "temperature_provenance": "CONFIRMED_PUBLIC_YATE_IMPLEMENTATION / UNKNOWN_TARGET_TABLE_IV_CONFIGURATION",
+  "generation_requests": 3,
+  "api_requests_billed_this_run": 3,
+  "reused_from_cache": 0,
+  "repair_requests": 0,
+  "repairs_enabled": false,
+  "total_usage": {},
+  "candidates": [
+    {
+      "candidate_id": "HumanEval/91|under_specified",
+      "raw_file": "HumanEval_91__under_specified.json",
+      "reused_from_cache": false,
+      "faulty_source_sha256": "22eb6f24dcbf9699406ee99ff3dfd6a378fb9459386cc7a78d99d2e316cdb885",
+      "evalplus_domain_difficulty": 0.9990059642147118,
+      "model_returned": null,
+      "http_requests_made": 1,
+      "api_rejected_parameters": [],
+      "parser": null,
+      "metrics": null
+    },
+    {
+      "candidate_id": "HumanEval/78|under_specified",
+      "raw_file": "HumanEval_78__under_specified.json",
+      "reused_from_cache": false,
+      "faulty_source_sha256": "786fc4fc82709b4478a987b2403fd956f9da34f60f4338d4d8a7e1b82fe27005",
+      "evalplus_domain_difficulty": 0.998025666337611,
+      "model_returned": null,
+      "http_requests_made": 1,
+      "api_rejected_parameters": [],
+      "parser": null,
+      "metrics": null
+    },
+    {
+      "candidate_id": "HumanEval/151|original",
+      "raw_file": "HumanEval_151__original.json",
+      "reused_from_cache": false,
+      "faulty_source_sha256": "05cda7fcd8902c1f3d50610b6d55b18f66c57e9612d7b0af6d5fb7cfae3b3e06",
+      "evalplus_domain_difficulty": 0.9980119284294234,
+      "model_returned": null,
+      "http_requests_made": 1,
+      "api_rejected_parameters": [],
+      "parser": null,
+      "metrics": null
+    }
+  ]
+}
