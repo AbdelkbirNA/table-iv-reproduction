@@ -11,7 +11,7 @@
   "seed": 20260910,
   "repetitions": 100,
   "difficulty_threshold": 0.75,
-  "runtime_seconds": 551.37,
+  "runtime_seconds": 427.37,
   "faults_retained": 30,
   "candidates_skipped": 289,
   "pool_target_size": 10,
@@ -26,9 +26,9 @@
     },
     "branch": {
       "faults": 30,
-      "ftr": 0.28166666666666673,
-      "fdr_upper_bound": 0.28166666666666673,
-      "mean_suite_size": 1.9333333333333353
+      "ftr": 0.3493333333333332,
+      "fdr_upper_bound": 0.3493333333333332,
+      "mean_suite_size": 2.1999999999999975
     },
     "mutation": {
       "faults": 30,
@@ -46,9 +46,9 @@
     },
     "branch": {
       "faults": 14,
-      "ftr": 0.6035714285714286,
-      "fdr_upper_bound": 0.6035714285714286,
-      "mean_suite_size": 2.0764285714285737
+      "ftr": 0.7485714285714284,
+      "fdr_upper_bound": 0.7485714285714284,
+      "mean_suite_size": 2.362142857142858
     },
     "mutation": {
       "faults": 14,
@@ -66,9 +66,9 @@
     },
     "branch": {
       "faults": 5,
-      "ftr": 0.7999999999999985,
-      "fdr_upper_bound": 0.7999999999999985,
-      "mean_suite_size": 3.199999999999994
+      "ftr": 0.8199999999999986,
+      "fdr_upper_bound": 0.8199999999999986,
+      "mean_suite_size": 3.3999999999999972
     },
     "mutation": {
       "faults": 5,
@@ -281,14 +281,14 @@
         "triggering_in_pool": 1
       },
       "HumanEval/30|under_specified": {
-        "ftr": 0.0,
-        "mean_suite_size": 0.0,
+        "ftr": 0.1,
+        "mean_suite_size": 1.0,
         "pool_size": 10,
         "triggering_in_pool": 1
       },
       "HumanEval/64|under_specified": {
-        "ftr": 0.0,
-        "mean_suite_size": 0.0,
+        "ftr": 0.33,
+        "mean_suite_size": 1.0,
         "pool_size": 10,
         "triggering_in_pool": 3
       },
@@ -312,7 +312,7 @@
       },
       "HumanEval/78|under_specified": {
         "ftr": 0.0,
-        "mean_suite_size": 0.0,
+        "mean_suite_size": 1.0,
         "pool_size": 10,
         "triggering_in_pool": 0
       },
@@ -330,7 +330,7 @@
       },
       "HumanEval/92|under_specified": {
         "ftr": 0.0,
-        "mean_suite_size": 0.0,
+        "mean_suite_size": 1.0,
         "pool_size": 10,
         "triggering_in_pool": 0
       },
@@ -341,14 +341,14 @@
         "triggering_in_pool": 1
       },
       "HumanEval/98|under_specified": {
-        "ftr": 0.0,
-        "mean_suite_size": 0.0,
+        "ftr": 0.8,
+        "mean_suite_size": 1.0,
         "pool_size": 10,
         "triggering_in_pool": 8
       },
       "HumanEval/99|original": {
         "ftr": 0.0,
-        "mean_suite_size": 0.0,
+        "mean_suite_size": 1.0,
         "pool_size": 10,
         "triggering_in_pool": 0
       },
@@ -365,8 +365,8 @@
         "triggering_in_pool": 4
       },
       "HumanEval/108|under_specified": {
-        "ftr": 0.0,
-        "mean_suite_size": 0.0,
+        "ftr": 0.8,
+        "mean_suite_size": 1.0,
         "pool_size": 10,
         "triggering_in_pool": 8
       },
@@ -438,7 +438,7 @@
       },
       "HumanEval/161|under_specified": {
         "ftr": 0.0,
-        "mean_suite_size": 0.0,
+        "mean_suite_size": 1.0,
         "pool_size": 10,
         "triggering_in_pool": 0
       }
@@ -674,41 +674,41 @@
         "requested_pool_size": 3,
         "mean_pool_size": 3.0,
         "draws_used": 20,
-        "ftr": 0.19680000000000003,
-        "fdr": 0.19680000000000003,
-        "mean_suite_size": 1.2142666666666666
+        "ftr": 0.2641666666666667,
+        "fdr": 0.2641666666666667,
+        "mean_suite_size": 1.4809333333333334
       },
       {
         "requested_pool_size": 5,
         "mean_pool_size": 5.0,
         "draws_used": 20,
-        "ftr": 0.2184,
-        "fdr": 0.2184,
-        "mean_suite_size": 1.4625500000000002
+        "ftr": 0.28276666666666667,
+        "fdr": 0.28276666666666667,
+        "mean_suite_size": 1.7292166666666666
       },
       {
         "requested_pool_size": 10,
         "mean_pool_size": 10.0,
         "draws_used": 1,
-        "ftr": 0.2743333333333334,
-        "fdr": 0.2743333333333334,
-        "mean_suite_size": 1.9349999999999998
+        "ftr": 0.341,
+        "fdr": 0.341,
+        "mean_suite_size": 2.2016666666666667
       },
       {
         "requested_pool_size": 20,
         "mean_pool_size": 10.0,
         "draws_used": 1,
-        "ftr": 0.27799999999999997,
-        "fdr": 0.27799999999999997,
-        "mean_suite_size": 1.9236666666666666
+        "ftr": 0.339,
+        "fdr": 0.339,
+        "mean_suite_size": 2.1903333333333337
       },
       {
         "requested_pool_size": 40,
         "mean_pool_size": 10.0,
         "draws_used": 1,
-        "ftr": 0.276,
-        "fdr": 0.276,
-        "mean_suite_size": 1.9380000000000002
+        "ftr": 0.3443333333333333,
+        "fdr": 0.3443333333333333,
+        "mean_suite_size": 2.2046666666666668
       }
     ],
     "mutation": [
@@ -3657,7 +3657,7 @@
       "mutants_killed": 5,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.07,
+      "mutation_seconds": 0.05,
       "triggering_in_pool": 1,
       "pool_difficulty": 0.9
     },
@@ -3679,7 +3679,7 @@
       "mutants_killed": 9,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.08,
+      "mutation_seconds": 0.05,
       "triggering_in_pool": 3,
       "pool_difficulty": 0.7
     },
@@ -3690,7 +3690,7 @@
       "mutants_killed": 18,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.09,
+      "mutation_seconds": 0.07,
       "triggering_in_pool": 7,
       "pool_difficulty": 0.30000000000000004
     },
@@ -3701,7 +3701,7 @@
       "mutants_killed": 11,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.1,
+      "mutation_seconds": 0.09,
       "triggering_in_pool": 0,
       "pool_difficulty": 1.0
     },
@@ -3712,7 +3712,7 @@
       "mutants_killed": 6,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.1,
+      "mutation_seconds": 0.08,
       "triggering_in_pool": 8,
       "pool_difficulty": 0.19999999999999996
     },
@@ -3723,7 +3723,7 @@
       "mutants_killed": 7,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.07,
+      "mutation_seconds": 0.08,
       "triggering_in_pool": 0,
       "pool_difficulty": 1.0
     },
@@ -3734,7 +3734,7 @@
       "mutants_killed": 22,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.08,
+      "mutation_seconds": 0.1,
       "triggering_in_pool": 0,
       "pool_difficulty": 1.0
     },
@@ -3745,7 +3745,7 @@
       "mutants_killed": 29,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.08,
+      "mutation_seconds": 0.09,
       "triggering_in_pool": 0,
       "pool_difficulty": 1.0
     },
@@ -3756,7 +3756,7 @@
       "mutants_killed": 27,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.09,
+      "mutation_seconds": 0.07,
       "triggering_in_pool": 0,
       "pool_difficulty": 1.0
     },
@@ -3767,7 +3767,7 @@
       "mutants_killed": 9,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.08,
+      "mutation_seconds": 0.09,
       "triggering_in_pool": 1,
       "pool_difficulty": 0.9
     },
@@ -3778,7 +3778,7 @@
       "mutants_killed": 7,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.1,
+      "mutation_seconds": 0.09,
       "triggering_in_pool": 8,
       "pool_difficulty": 0.19999999999999996
     },
@@ -3800,7 +3800,7 @@
       "mutants_killed": 8,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.13,
+      "mutation_seconds": 0.08,
       "triggering_in_pool": 0,
       "pool_difficulty": 1.0
     },
@@ -3811,7 +3811,7 @@
       "mutants_killed": 8,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.11,
+      "mutation_seconds": 0.07,
       "triggering_in_pool": 4,
       "pool_difficulty": 0.6
     },
@@ -3822,7 +3822,7 @@
       "mutants_killed": 10,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.11,
+      "mutation_seconds": 0.08,
       "triggering_in_pool": 8,
       "pool_difficulty": 0.19999999999999996
     },
@@ -3833,7 +3833,7 @@
       "mutants_killed": 23,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.2,
+      "mutation_seconds": 0.11,
       "triggering_in_pool": 0,
       "pool_difficulty": 1.0
     },
@@ -3844,7 +3844,7 @@
       "mutants_killed": 5,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.07,
+      "mutation_seconds": 0.06,
       "triggering_in_pool": 6,
       "pool_difficulty": 0.4
     },
@@ -3855,7 +3855,7 @@
       "mutants_killed": 30,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.1,
+      "mutation_seconds": 0.11,
       "triggering_in_pool": 0,
       "pool_difficulty": 1.0
     },
@@ -3866,7 +3866,7 @@
       "mutants_killed": 10,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.08,
+      "mutation_seconds": 0.07,
       "triggering_in_pool": 0,
       "pool_difficulty": 1.0
     },
@@ -3877,7 +3877,7 @@
       "mutants_killed": 23,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.1,
+      "mutation_seconds": 0.08,
       "triggering_in_pool": 0,
       "pool_difficulty": 1.0
     },
@@ -3888,7 +3888,7 @@
       "mutants_killed": 16,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.1,
+      "mutation_seconds": 0.08,
       "triggering_in_pool": 6,
       "pool_difficulty": 0.4
     },
@@ -3899,7 +3899,7 @@
       "mutants_killed": 40,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.12,
+      "mutation_seconds": 0.13,
       "triggering_in_pool": 1,
       "pool_difficulty": 0.9
     },
@@ -3921,7 +3921,7 @@
       "mutants_killed": 16,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.09,
+      "mutation_seconds": 0.11,
       "triggering_in_pool": 0,
       "pool_difficulty": 1.0
     },
@@ -3932,7 +3932,7 @@
       "mutants_killed": 13,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.08,
+      "mutation_seconds": 0.07,
       "triggering_in_pool": 0,
       "pool_difficulty": 1.0
     },
@@ -3943,7 +3943,7 @@
       "mutants_killed": 13,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.09,
+      "mutation_seconds": 0.11,
       "triggering_in_pool": 0,
       "pool_difficulty": 1.0
     },
@@ -3954,7 +3954,7 @@
       "mutants_killed": 0,
       "baseline_mismatches": 0,
       "mutation_failures": 0,
-      "mutation_seconds": 0.08,
+      "mutation_seconds": 0.07,
       "triggering_in_pool": 0,
       "pool_difficulty": 1.0
     }
