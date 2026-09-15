@@ -1,112 +1,90 @@
-# Table IV Reproduction
+# Reproducing Table IV of arXiv:2609.09315
 
-Reproduction study for Table IV of **"How effective are traditional test criteria at detecting bugs in large language models generated code?"** (Hamidi et al., arXiv:2609.09315).
+Reproduction study of **Table IV** of Hamidi, Konstantinou, Degiovanni & Papadakis,
+*"How effective are traditional test criteria at detecting bugs in large language models
+generated code?"* — [arXiv:2609.09315](https://arxiv.org/abs/2609.09315).
 
-## Goal
+## Objective
 
-Reproduce, or meaningfully approximate when the original artifacts are unavailable, the Table IV comparison of:
+Table IV asks: when a test suite is sampled to be **adequate** for a traditional
+structural criterion — statement coverage, branch coverage, or mutation score — how often
+does it **trigger** a fault in LLM-generated code (FTR), and how often does it **detect**
+one (FDR)? This repository re-implements that protocol and runs it on real GPT-5-mini
+faults.
 
-- mutation score
-- branch coverage
-- statement coverage
+## What was reproduced
 
-using:
+The paper's replication package is not public — no artifact URL in the paper, the authors'
+own `llm-plain` repository is README-only with *"Python implementation: Work in
+progress"*. So this is a **reconstruction, not a faithful reproduction**: the protocol
+implemented exactly, real GPT-5-mini faults, substituted test pool and oracle, every
+substitution named in the report.
 
-- Fault Trigger Rate (FTR)
-- Fault Detection Rate (FDR)
+- **FTR is measured.** Real numbers, 30 real faults, 100 iterations, fixed seed.
+- **FDR is *not* reproduced.** It depends on the paper's LLM-written oracles, which are
+  unavailable. Only an upper bound is reported, and it is never compared to the paper's
+  FDR at face value. See report §8.
 
-The paper samples a coverage-maximizing test suite randomly, repeats the process 100 times per fault and criterion, and reports mean FTR/FDR by benchmark and fault-generating model.
+## Headline results
 
-## Current status
+30 faults, 100 iterations, seed 20260910 (`results/table_iv_humaneval_gpt5mini.json`):
 
-The paper's replication package is not public (checked: arXiv text, the authors'
-`llm-plain` repo, all four authors' GitHub accounts -- `report/report.md` §2). The
-protocol is therefore implemented exactly and run on real GPT-5-mini faults with two
-documented substitutions: the sampling pool (A8) and the oracle (A9).
+| Criterion | Reproduced FTR | *Paper FTR* | Absolute difference |
+|---|---:|---:|---:|
+| Mutation | **0.3870** | *0.393* | 0.0060 |
+| Branch | **0.3493** | *0.450* | 0.1007 |
+| Statement | **0.3477** | *0.385* | 0.0373 |
 
-**Measured**, 30 real faults, 100 iterations, seed 20260910
-(`results/table_iv_humaneval_gpt5mini.json`):
+Mutation reproduces closely and statement is consistent. **Branch does not reproduce**:
+the paper reports branch as the best criterion, here it is indistinguishable from
+statement. A real implementation bug was found and fixed during that investigation
+(arcs-only branch adequacy let an *empty* suite count as branch-adequate for 8 of 30
+faults); it closed 0.068 of the gap and 0.101 remains open and unexplained — report §9.1.
 
-| Criterion | FTR measured | *Paper FTR* | FDR upper bound | *Paper FDR* |
-|---|---:|---:|---:|---:|
-| Mutation | **0.3870** | *0.393* | 0.3870 | *0.000* |
-| Branch | **0.2817** | *0.450* | 0.2817 | *0.000* |
-| Statement | **0.3477** | *0.385* | 0.3477 | *0.000* |
+*Italic values are transcribed from the paper for comparison only. No code path can read
+them; `tests/test_reference_isolation.py` fails if that ever changes. The differences
+above are computed by `report/make_comparison.py`, not typed by hand.*
 
-Mutation lands within 0.006 of the paper and statement within 0.037; branch diverges by
-0.168 and inverts the ordering, discussed in the report. **FDR here is an upper bound,
-not a reproduction** -- our oracle is correct, so it detects everything it triggers. The
-paper's oracles were LLM-written with the faulty program in the prompt. The gap between
-0.387 and 0.000 is the cost of the oracle, and it is the main finding.
-
-Full write-up: **`report/report.md`**.
-
-## Phase 1 scope
-
-Start with **HumanEval / GPT-5-mini** only. Target values reported in Table IV:
-
-| Criterion | FTR | FDR |
-|---|---:|---:|
-| Mutation | 0.393 | 0.000 |
-| Branch | 0.450 | 0.000 |
-| Statement | 0.385 | 0.000 |
-
-These values are references for comparison, not values hard-coded into the experiment.
-
-## Design
-
-The core sampler is intentionally independent of the raw benchmark infrastructure. Each test case is represented by:
-
-1. the set of adequacy items it covers for a chosen criterion (statements, branches, or killed mutants),
-2. whether it triggers the target fault,
-3. whether its oracle detects the target fault.
-
-This allows the Table IV sampling protocol to be tested before all original paper artifacts are available.
-
-## Important methodological assumptions
-
-The arXiv paper does not identify the exact Python mutation engine/operators used, and it does not expose a replication-package URL in the paper text. The official LLM-Plain repository currently says the implementation available through YATE is Java-oriented and its Python implementation is work in progress, so we do not possess the `table_iv_llm_plain_tests` pool (the paper reports 4,872 LLM-Plain tests for HumanEval). Therefore, any replacement mutation engine or regenerated test pool must be documented as a simplifying assumption.
-
-The paper generates tests with an LLM at two distinct points, and this repository keeps them apart: `fault_discovery_augmented_tests` (differential tests that define the fault corpus and the paper's difficulty) and `table_iv_llm_plain_tests` (the pool Table IV samples adequate suites from). See `docs/experiment_plan.md`.
-
-## Local setup
-
-Recommended: Python 3.11 in an isolated environment.
+## Reproduce it
 
 ```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
+python3.11 -m venv .venv && source .venv/bin/activate
 pip install -e '.[dev]'
-pytest -q                                              # 182 passed
 
-python scripts/run_table_iv_humaneval_gpt5mini.py      # the reproduction, ~9 min
-python scripts/dry_run_table_iv.py                     # pipeline invariants, synthetic
+pytest -q                                          # 216 passed
+python scripts/run_table_iv_humaneval_gpt5mini.py  # ~7 min, no API key needed
 ```
 
-Generated or untrusted code should be executed only inside a sandbox/container.
+Writes `results/table_iv_humaneval_gpt5mini.json`. Deterministic: the same seed reproduces
+every number, and `python scripts/dry_run_table_iv.py` asserts that plus nine other
+pipeline invariants on synthetic faults.
+
+## Limitations
+
+- **FDR is unavailable** — needs the paper's `table_iv_llm_plain_tests` pool or a working
+  Python LLM-Plain. Neither exists publicly.
+- **Branch diverges by 0.1007** and the paper's criterion ordering is not reproduced.
+- **30 faults, not 84** — public generations give 1 per prompt, the paper used 10 at T=0.8.
+- **Substituted pool and oracle** (A8, A9) and **substituted mutation engine** (A2, mutmut
+  3.7.0 — the paper never names its tool).
+
+All of these, with their direction of effect, are in report §6 and §11.
 
 ## Repository layout
 
 ```text
-src/table_iv_replication/   Core sampling and metrics
-scripts/                   Experiment entry points
-configs/                   Reproduction configurations
-data/                      External/raw artifact notes (not committed when large)
-results/                   Raw and processed outputs
-tests/                     Unit tests for the reproduction logic
-docs/                      Protocol and assumption log
-report/                    The written report
+src/table_iv_replication/   Sampling protocol, coverage/mutation measurement, oracles
+scripts/                    Experiment entry points (no published value is readable here)
+configs/                    Run configuration + quarantined Table IV reference values
+data/                       Pinned external artifacts (checksummed manifests)
+results/                    Measured outputs, committed
+tests/                      216 unit tests, including the reference-isolation guard
+docs/                       Protocol reconstruction, gap matrix, assumption log
+report/                     The report, and the tool that generates its comparison table
 ```
 
-## Reproducibility policy
+## Report
 
-Every experiment should record:
-
-- dataset version/revision
-- model identifier
-- random seed
-- number of iterations
-- test-pool source
-- mutation tool and version
-- coverage tool and version
-- all deviations from the original paper
+**[`report/report.md`](report/report.md)** — objective, methodology, artifact
+availability, assumptions, results, FDR status, the branch investigation, observations,
+threats to validity, and reproduction instructions.
