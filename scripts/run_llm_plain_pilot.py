@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import sys
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -33,6 +34,7 @@ from table_iv_replication.llm_plain_protocol import (  # noqa: E402
 )
 from table_iv_replication.openai_generation import (  # noqa: E402
     API_KEY_NOT_CONFIGURED,
+    GenerationCall,
     api_key_configured,
     generate,
 )
@@ -74,6 +76,14 @@ ACCESS_PATTERNS = {
 
 def rule(title: str) -> None:
     print(f"\n{'=' * 78}\n{title}\n{'=' * 78}")
+
+
+def display(path: Path) -> str:
+    """Project-relative path when it is one, absolute otherwise."""
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
 
 
 def classify_access(code: str, entry_point: str) -> tuple[str, list[str]]:
@@ -152,6 +162,58 @@ def raw_path(candidate) -> Path:
     return RAW / f"{candidate['task_id'].replace('/', '_')}__{candidate['prompt_variant']}.json"
 
 
+def write_record(path: Path, record: dict) -> None:
+    """Persist a record atomically.
+
+    Written to a sibling temporary file and renamed into place, so an interrupt
+    mid-write can never leave a half-written JSON file that a later run would
+    mistake for a usable cached response. ``Path.replace`` is atomic on POSIX.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
+
+
+def load_cached_record(candidate) -> dict | None:
+    """Return a saved record **only** if it holds a usable API response.
+
+    The API call is the sole part of this pilot that costs money, so it is the
+    part that gets cached. Parsing and execution are free and are always redone,
+    which is also what makes an interrupted run resumable: a run killed during
+    execution still has its response on disk and completes on the next attempt
+    without spending anything.
+
+    A record whose call failed is *not* a cache hit -- retrying a failure is the
+    point of rerunning.
+    """
+    path = raw_path(candidate)
+    if not path.exists():
+        return None
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    if not isinstance(record, dict):
+        return None
+    api = record.get("api")
+    if not isinstance(api, dict) or api.get("response_text") is None:
+        return None
+    return record
+
+
+def quarantine(path: Path) -> Path:
+    """Move an unusable raw file aside instead of destroying it.
+
+    Reached only when a file exists but cannot be read back as a successful
+    response. It is never silently overwritten: a failed call's recorded error
+    is audit material, and a corrupt file is evidence of something worth seeing.
+    """
+    backup = path.with_name(f"{path.stem}.unusable-{int(time.time())}{path.suffix}")
+    path.rename(backup)
+    return backup
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--force", action="store_true",
@@ -183,13 +245,29 @@ def main(argv=None) -> int:
         )
         print(f"{'':<34}faulty source sha256 {candidate['faulty_sha256']}")
 
-    # Overwrite protection happens before any network use.
-    existing = [c for c in candidates if raw_path(c).exists()]
-    if existing and not args.force:
-        print("\nSTOP: raw responses already exist for "
-              f"{[c['candidate_id'] for c in existing]}.")
-        print("Re-run with --force to overwrite them.")
-        return 3
+    # Resolve the cache before anything else, so the exact number of paid
+    # requests is known and printed before a single one is made.
+    plan = [
+        (candidate, None if args.force else load_cached_record(candidate))
+        for candidate in candidates
+    ]
+    to_generate = [candidate for candidate, cached in plan if cached is None]
+    reusing = [candidate for candidate, cached in plan if cached is not None]
+
+    rule("CACHE PLAN")
+    for candidate, cached in plan:
+        path = raw_path(candidate)
+        if cached is not None:
+            state = f"REUSE existing response ({path.name})"
+        elif args.force and path.exists():
+            state = "REGENERATE (--force, existing response will be replaced)"
+        elif path.exists():
+            state = "REGENERATE (existing file is unusable; it will be kept aside)"
+        else:
+            state = "GENERATE (no response on disk)"
+        print(f"{candidate['candidate_id']:<34}{state}")
+    print(f"\nPaid API requests this run: {len(to_generate)}  "
+          f"(reusing {len(reusing)} cached)")
 
     if args.dry_run:
         rule("DRY RUN")
@@ -201,22 +279,44 @@ def main(argv=None) -> int:
         print("\nNo API call was made (--dry-run).")
         return 0
 
-    if not api_key_configured():
+    # The key is needed only if something actually has to be generated. A fully
+    # cached rerun completes offline.
+    if to_generate and not api_key_configured():
         rule("RESULT")
         print(API_KEY_NOT_CONFIGURED)
-        print("\nNo API call was made. Set OPENAI_API_KEY in the environment and")
-        print("re-run; everything else in this pilot is already verified.")
+        print(f"\nNo API call was made. {len(to_generate)} candidate(s) still need "
+              "generating:")
+        for candidate in to_generate:
+            print(f"  {candidate['candidate_id']}")
+        print("Set OPENAI_API_KEY in the environment and re-run; everything else in")
+        print("this pilot is already verified.")
         return 2
 
     RAW.mkdir(parents=True, exist_ok=True)
     system_prompt = build_python_system_prompt(PUBLIC_YATE_FAITHFUL)
     records = []
 
-    rule(f"GENERATION -- {len(candidates)} REQUESTS, NO REPAIR")
-    for candidate in candidates:
+    rule(f"GENERATION -- {len(to_generate)} REQUEST(S), NO REPAIR")
+    for candidate, cached in plan:
         user_prompt = build_python_generation_prompt(
             candidate["faulty_source"], PUBLIC_YATE_FAITHFUL
         )
+
+        if cached is not None:
+            call = GenerationCall.from_dict(cached["api"])
+            record = dict(cached)
+            record["reused_from_cache"] = True
+            print(f"{candidate['candidate_id']:<34} reused (no API call)")
+            print(f"{'':<34} model returned: {call.model_returned}  "
+                  f"requested at: {call.requested_at}")
+            records.append((candidate, call, record))
+            continue
+
+        path = raw_path(candidate)
+        if path.exists():
+            kept = quarantine(path)
+            print(f"{candidate['candidate_id']:<34} kept unusable file as {kept.name}")
+
         call = generate(
             model=MODEL,
             system_prompt=system_prompt,
@@ -236,12 +336,12 @@ def main(argv=None) -> int:
             "user_prompt": user_prompt,
             "config": PUBLIC_YATE_FAITHFUL.to_dict(),
             "repair_requests_made": 0,
+            "reused_from_cache": False,
             "api": call.to_dict(),
         }
-        # Save immediately, before parsing or execution can fail.
-        raw_path(candidate).write_text(
-            json.dumps(record, indent=2) + "\n", encoding="utf-8"
-        )
+        # Save immediately, before parsing or execution can fail: this response
+        # is the only thing that cost money.
+        write_record(path, record)
         status = "ok" if call.succeeded else f"FAILED: {call.error}"
         print(f"{candidate['candidate_id']:<34} {status}")
         print(f"{'':<34} model returned: {call.model_returned}  "
@@ -300,7 +400,7 @@ def main(argv=None) -> int:
         print(f"  imports            {parser['imports']}")
         print(f"  access pattern     {parser['access_pattern']} "
               f"-- {ACCESS_PATTERNS[parser['access_pattern']]}")
-        raw_path(candidate).write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+        write_record(raw_path(candidate), record)
 
     rule("EXECUTION AGAINST REFERENCE AND FAULTY (isolated, no repair)")
     for candidate, call, record in records:
@@ -344,7 +444,7 @@ def main(argv=None) -> int:
             "metrics": metrics,
             "tests": [r.to_dict() for r in results],
         }
-        raw_path(candidate).write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+        write_record(raw_path(candidate), record)
 
         print(f"\n{candidate['candidate_id']}")
         print(f"  {'test':<34}{'reference':<20}{'faulty':<20}{'trig':<7}{'det':<6}verdict")
@@ -365,13 +465,19 @@ def main(argv=None) -> int:
 
     rule("API USAGE")
     totals = Counter()
-    for candidate, call, _ in records:
+    spent_now = Counter()
+    for candidate, call, record in records:
         usage = call.usage
-        print(f"{candidate['candidate_id']:<34}{json.dumps(usage)}")
+        reused = record.get("reused_from_cache", False)
+        print(f"{candidate['candidate_id']:<34}{'(reused) ' if reused else '':<10}"
+              f"{json.dumps(usage)}")
         for key, value in usage.items():
             if isinstance(value, int):
                 totals[key] += value
-    print(f"\ntotals: {json.dumps(dict(totals))}")
+                if not reused:
+                    spent_now[key] += value
+    print(f"\ncumulative across all candidates: {json.dumps(dict(totals))}")
+    print(f"billed by THIS run (cached excluded): {json.dumps(dict(spent_now))}")
     print("No dollar cost is estimated: no authoritative price is configured.")
 
     manifest = {
@@ -383,6 +489,12 @@ def main(argv=None) -> int:
             "CONFIRMED_PUBLIC_YATE_IMPLEMENTATION / UNKNOWN_TARGET_TABLE_IV_CONFIGURATION"
         ),
         "generation_requests": len(records),
+        "api_requests_billed_this_run": sum(
+            1 for _, _, r in records if not r.get("reused_from_cache", False)
+        ),
+        "reused_from_cache": sum(
+            1 for _, _, r in records if r.get("reused_from_cache", False)
+        ),
         "repair_requests": 0,
         "repairs_enabled": False,
         "total_usage": dict(totals),
@@ -390,6 +502,7 @@ def main(argv=None) -> int:
             {
                 "candidate_id": candidate["candidate_id"],
                 "raw_file": raw_path(candidate).name,
+                "reused_from_cache": record.get("reused_from_cache", False),
                 "faulty_source_sha256": candidate["faulty_sha256"],
                 "evalplus_domain_difficulty": candidate["evalplus_domain_difficulty"],
                 "model_returned": call.model_returned,
@@ -401,9 +514,9 @@ def main(argv=None) -> int:
             for candidate, call, record in records
         ],
     }
-    (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-    print(f"\nSaved: {(OUT / 'manifest.json').relative_to(ROOT)}")
-    print(f"Saved: {RAW.relative_to(ROOT)}/ ({len(records)} raw responses)")
+    write_record(OUT / "manifest.json", manifest)
+    print(f"\nSaved: {display(OUT / 'manifest.json')}")
+    print(f"Saved: {display(RAW)}/ ({len(records)} raw responses)")
     print("\nRepair requests made: 0 (repairs disabled for this phase)")
     return 0
 

@@ -64,6 +64,33 @@ class GenerationCall:
     def succeeded(self) -> bool:
         return self.response_text is not None
 
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "GenerationCall":
+        """Rebuild a call from a previously saved record.
+
+        The inverse of :meth:`to_dict`, so a persisted response can be replayed
+        without spending another request. Nothing secret was ever written, so
+        nothing secret can be read back.
+        """
+        return cls(
+            model_requested=payload["model_requested"],
+            model_returned=payload.get("model_returned"),
+            response_text=payload.get("response_text"),
+            finish_reason=payload.get("finish_reason"),
+            response_id=payload.get("response_id"),
+            created=payload.get("created"),
+            system_fingerprint=payload.get("system_fingerprint"),
+            temperature_requested=payload.get("temperature_requested"),
+            temperature_sent=payload.get("temperature_sent"),
+            usage=dict(payload.get("usage") or {}),
+            requested_at=payload.get("requested_at", ""),
+            completed_at=payload.get("completed_at", ""),
+            http_requests_made=payload.get("http_requests_made", 0),
+            api_rejected_parameters=tuple(payload.get("api_rejected_parameters") or ()),
+            api_errors=tuple(payload.get("api_errors") or ()),
+            error=payload.get("error"),
+        )
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "model_requested": self.model_requested,
