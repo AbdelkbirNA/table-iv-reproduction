@@ -19,3 +19,14 @@ data/external/**
 !data/external/
 !data/external/*/
 !data/external/*/manifest.json
+
+# Credentials. The pilot reads OPENAI_API_KEY from the environment only; nothing
+# here should ever exist, but an accidental `.env` must not be committable.
+.env
+.env.*
+*.env
+!data/external/*/manifest.json
+secrets.*
+*.pem
+*.key
+credentials.json
