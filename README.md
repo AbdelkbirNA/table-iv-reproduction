@@ -51,13 +51,19 @@ above are computed by `report/make_comparison.py`, not typed by hand.*
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -e '.[dev]'
 
+python scripts/fetch_related_artifacts.py          # once; checksum-pinned, ~1.7 MB
 pytest -q                                          # 216 passed
 python scripts/run_table_iv_humaneval_gpt5mini.py  # ~7 min, no API key needed
 ```
 
-Writes `results/table_iv_humaneval_gpt5mini.json`. Deterministic: the same seed reproduces
-every number, and `python scripts/dry_run_table_iv.py` asserts that plus nine other
-pipeline invariants on synthetic faults.
+Writes `results/table_iv_humaneval_gpt5mini.json`. **No API key is used or needed.**
+Deterministic: verified by cloning into a fresh directory with a fresh virtualenv and
+rerunning — every scientific value came back bit-identical, only wall-clock timings
+differed. `python scripts/dry_run_table_iv.py` asserts that plus nine other pipeline
+invariants on synthetic faults.
+
+Skipping the fetch step is safe: the tests that need those artifacts skip with the command
+to run, rather than failing.
 
 ## Limitations
 

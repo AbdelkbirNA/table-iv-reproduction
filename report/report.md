@@ -504,6 +504,7 @@ python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
 
+python scripts/fetch_related_artifacts.py          # once; 4 files, ~1.7 MB, checksum-pinned
 pytest -q                                          # 216 passed
 
 python scripts/run_table_iv_humaneval_gpt5mini.py  # ~7 min, no API key needed
@@ -521,10 +522,32 @@ python scripts/dry_run_table_iv.py   # 10 pipeline invariants on synthetic fault
 | Writes | `results/table_iv_humaneval_gpt5mini.json` |
 | Seed | `20260910`, fixed in the script; override with `--seed` |
 | Determinism | Same seed reproduces every number; asserted, not assumed, by `dry_run_table_iv.py` |
-| Hidden state | None. The script reads only the pinned EvalPlus benchmark and the pinned generation artifacts, both fetched on first use and checksummed against `data/*/manifest.json`. |
+| Hidden state | None. The script reads only the pinned EvalPlus benchmark and the pinned generation artifacts, both checksummed against `data/*/manifest.json`. |
 | Credentials | None required. `OPENAI_API_KEY` is used only by `scripts/run_llm_plain_pilot.py`, which is not part of this command. |
 
 `--limit N` and `--tasks IDS` run a subset for a fast smoke check.
+
+### 12.1 Clean-state validation performed
+
+These instructions were executed, not assumed. A fresh `git clone` into an empty
+directory, with a fresh virtualenv, was taken through every step above:
+
+| Step | Result |
+|---|---|
+| `pip install -e '.[dev]'` | Clean; resolved to coverage 7.15.4, evalplus 0.3.1, mutmut 3.7.0, pytest 9.1.1 |
+| `pytest -q` **before** fetching artifacts | **190 passed, 26 skipped, 0 failed.** The first pass of this validation instead produced 17 hard failures, because `data/external/**` is not committed; tests that need fetched artifacts now skip with the fetch command in the skip reason. |
+| `python scripts/fetch_related_artifacts.py` | 4 artifacts fetched and verified against the committed manifest checksums |
+| `pytest -q` **after** fetching | **216 passed** |
+| `python scripts/run_table_iv_humaneval_gpt5mini.py` | 410.8 s. Every scientific value **bit-identical** to the committed results file — FTR, FDR bound, suite sizes, per-fault rates, corpus, mutant counts, the pool sweep. The only differing fields were per-fault `mutation_seconds` wall-clock timings. |
+| `python report/make_comparison.py --check` | Passes |
+| `python scripts/dry_run_table_iv.py` | 10/10 invariants pass |
+
+This is the evidence for "no hidden local state": the run was reproduced in a different
+directory, from a different virtualenv, against a clone holding only committed files.
+
+**Not validated:** a different operating system, a different CPU architecture, or a
+Python other than 3.11.16. `pyproject.toml` declares `>=3.11,<3.14`, but only 3.11.16 on
+macOS/arm64 was exercised.
 
 ## 13. Conclusion
 
