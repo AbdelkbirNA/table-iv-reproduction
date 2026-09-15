@@ -376,3 +376,57 @@ The paper reports 84 selected non-trivial HumanEval faults for GPT-5-mini.
 3. LLM-Plain's public repository says Python support is work in progress, so reproducing the exact `table_iv_llm_plain_tests` pool from that repository is not currently possible. See the LLM-Plain availability note in `docs/data_provenance.md`.
 4. The paper does not expose the prompt or configuration used for the `fault_discovery_augmented_tests`, so the denominator of its fault difficulty cannot be reconstructed.
 4. ~~We must confirm whether adequacy is computed against each faulty implementation or another program variant~~ -- resolved as **assumption A1** above: adequacy is measured against the faulty implementation. Still an assumption, not a confirmed convention; instrumentation stays outside the sampling core so it can be switched without rewriting the protocol.
+
+
+## Assumption A8 -- the two suites, substituted
+
+The paper draws on two different LLM-generated suites and this repository has always
+kept them apart: `fault_discovery_augmented_tests` defines the corpus and difficulty,
+`table_iv_llm_plain_tests` is the pool `TS_f` that adequate suites are sampled from.
+Neither is public.
+
+**Decision.** Split the EvalPlus HumanEval+ input domain disjointly and
+deterministically (`domain_pool.split_domain`). The discovery half establishes that a
+program is faulty. `TS_f` is then built from the pool half by **oracle-blind
+coverage-greedy selection** (`domain_pool.select_coverage_pool`): greedily take the
+input adding the most new statement-union-branch coverage of the faulty program until
+nothing adds any, then pad to a target size matching the paper's density of 9.37 tests
+per fault.
+
+**Why this shape.** LLM-Plain's generation prompt, read verbatim from the authors' own
+public implementation (`docs/llm_plain_reconstruction.md`), is *"generate all tests
+needed to achieve 100% code coverage"* with the program under test in the prompt. Its
+output is a small, coverage-oriented suite written without sight of the reference. The
+substitute pursues the same objective on real inputs.
+
+**The property that matters.** The selector reads coverage only. It never reads whether
+an input triggers the fault, so a triggering input enters the pool only incidentally --
+as it would with a generator that cannot see the reference solution. A test pins this at
+the call boundary (`tests/test_domain_pool.py::test_selection_is_oracle_blind`).
+
+**What it costs.** This is an *idealisation* of LLM-Plain: it attains the coverage
+objective LLM-Plain is merely asked to attain. Real LLM-Plain tests would cover less, so
+FTR measured here is plausibly optimistic.
+
+**Difficulty.** Retention is applied over `TS_f`, where the paper defines it ("triggered
+by at most 25% of the suite"), not over the input domain. Applying it to a 500-input
+fuzzing half-domain selects difficulty ~0.999 -- 1-2 triggering inputs in 1,000 -- and
+drove FTR to exactly 0 for every criterion, with 0 of 7 pools containing a triggering
+test. That measured the denominator, not the criteria.
+
+## Assumption A9 -- the oracle, and the bound it gives
+
+Our tests carry the reference implementation's output as their expectation. Such an
+oracle is correct, so it flags every fault its input triggers: **detection equals
+triggering and FDR = FTR by construction** (`domain_pool.REFERENCE_DIFFERENTIAL`).
+
+This is **not** the paper's FDR and must never be compared to it at face value. The
+paper's oracles were written by an LLM holding the faulty program in its prompt, so they
+encode the buggy behaviour. Our FDR is an **upper bound** on theirs.
+
+The bound is worth measuring: the paper reports FDR 0.000 for HumanEval/GPT-5-mini while
+triggering ~39% of faults. The distance between that and our bound is the entire cost of
+the oracle, and it says the coverage criteria are not what fails in their pipeline.
+
+Closing this row requires an LLM. `scripts/run_llm_plain_pilot.py` implements the
+generation path; it stops at the key gate while `OPENAI_API_KEY` is unset.

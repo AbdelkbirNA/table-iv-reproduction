@@ -17,6 +17,30 @@ using:
 
 The paper samples a coverage-maximizing test suite randomly, repeats the process 100 times per fault and criterion, and reports mean FTR/FDR by benchmark and fault-generating model.
 
+## Current status
+
+The paper's replication package is not public (checked: arXiv text, the authors'
+`llm-plain` repo, all four authors' GitHub accounts -- `report/report.md` §2). The
+protocol is therefore implemented exactly and run on real GPT-5-mini faults with two
+documented substitutions: the sampling pool (A8) and the oracle (A9).
+
+**Measured**, 30 real faults, 100 iterations, seed 20260910
+(`results/table_iv_humaneval_gpt5mini.json`):
+
+| Criterion | FTR measured | *Paper FTR* | FDR upper bound | *Paper FDR* |
+|---|---:|---:|---:|---:|
+| Mutation | **0.3870** | *0.393* | 0.3870 | *0.000* |
+| Branch | **0.2817** | *0.450* | 0.2817 | *0.000* |
+| Statement | **0.3477** | *0.385* | 0.3477 | *0.000* |
+
+Mutation lands within 0.006 of the paper and statement within 0.037; branch diverges by
+0.168 and inverts the ordering, discussed in the report. **FDR here is an upper bound,
+not a reproduction** -- our oracle is correct, so it detects everything it triggers. The
+paper's oracles were LLM-written with the faulty program in the prompt. The gap between
+0.387 and 0.000 is the cost of the oracle, and it is the main finding.
+
+Full write-up: **`report/report.md`**.
+
 ## Phase 1 scope
 
 Start with **HumanEval / GPT-5-mini** only. Target values reported in Table IV:
@@ -53,7 +77,10 @@ Recommended: Python 3.11 in an isolated environment.
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
-pytest -q
+pytest -q                                              # 182 passed
+
+python scripts/run_table_iv_humaneval_gpt5mini.py      # the reproduction, ~9 min
+python scripts/dry_run_table_iv.py                     # pipeline invariants, synthetic
 ```
 
 Generated or untrusted code should be executed only inside a sandbox/container.
@@ -68,6 +95,7 @@ data/                      External/raw artifact notes (not committed when large
 results/                   Raw and processed outputs
 tests/                     Unit tests for the reproduction logic
 docs/                      Protocol and assumption log
+report/                    The written report
 ```
 
 ## Reproducibility policy

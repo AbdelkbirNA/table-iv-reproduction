@@ -3,17 +3,45 @@ experiment:
   fault_model: gpt-5-mini
   repetitions: 100
   seed: 20260910
+  pool_target_size: 10        # paper density: 4872 tests / 520 faults = 9.37
 
-paper_target:
-  mutation: {ftr: 0.393, fdr: 0.000}
-  branch: {ftr: 0.450, fdr: 0.000}
-  statement: {ftr: 0.385, fdr: 0.000}
+# ---------------------------------------------------------------------------
+# REFERENCE VALUES ONLY -- NEVER READ BY ANY CODE PATH.
+#
+# Transcribed from Table IV of arXiv:2609.09315 so a reader can compare, and so
+# the comparison is auditable. No module in src/, scripts/ or tests/ loads this
+# file; verify with:
+#
+#     grep -rn "paper_target\|humaneval_gpt5mini\|yaml" src/ scripts/ tests/
+#
+# That grep must stay empty. The moment a target value can reach the pipeline,
+# the pipeline can be tuned to it, and the reproduction is worthless.
+# ---------------------------------------------------------------------------
+paper_reference:
+  source: "arXiv:2609.09315 Table IV (Hamidi, Konstantinou, Degiovanni, Papadakis)"
+  caption_note: "Results averaged over 100 iterations; underlined values mark the best criterion."
+  read_by_code: false
+  humaneval:
+    gpt-5-mini:            {mutation: {ftr: 0.393, fdr: 0.000}, branch: {ftr: 0.450, fdr: 0.000}, statement: {ftr: 0.385, fdr: 0.000}}
+    gpt-4.1-mini:          {mutation: {ftr: 0.111, fdr: 0.020}, branch: {ftr: 0.161, fdr: 0.026}, statement: {ftr: 0.120, fdr: 0.019}}
+    claude-haiku-4-5:      {mutation: {ftr: 0.137, fdr: 0.021}, branch: {ftr: 0.103, fdr: 0.010}, statement: {ftr: 0.088, fdr: 0.010}}
+    Llama-3.3-70B-Instruct:{mutation: {ftr: 0.138, fdr: 0.028}, branch: {ftr: 0.123, fdr: 0.011}, statement: {ftr: 0.105, fdr: 0.010}}
+    deepseek-v4-flash:     {mutation: {ftr: 0.056, fdr: 0.000}, branch: {ftr: 0.082, fdr: 0.006}, statement: {ftr: 0.070, fdr: 0.003}}
+
+paper_protocol:
+  generations_per_prompt: 10
+  temperature: 0.8
+  difficulty_threshold: 0.75          # retain faults triggered by <= 25% of the suite
+  humaneval_llm_plain_tests: 4872     # pool TS_f, across 520 selected HumanEval faults
+  humaneval_selected_faults_gpt5mini: 84
 
 artifacts:
-  test_pool_source: TBD
-  faulty_implementations_source: TBD
+  # None of the paper's own artifacts are public; see docs/protocol_gap_matrix.md.
+  test_pool_source: "SUBSTITUTED (A8): oracle-blind coverage-greedy suite from the EvalPlus HumanEval+ input domain"
+  faulty_implementations_source: "SUBSTITUTED: PromptAnalysis public gpt-5-mini generations, 1 per prompt (paper: 10 @ T=0.8)"
+  oracle_source: "SUBSTITUTED (A9): reference-differential; FDR measured under it is an UPPER BOUND"
 
 instrumentation:
   statement_branch_tool: coverage.py==7.15.4
   mutation_tool: mutmut==3.7.0
-  mutation_tool_is_simplifying_assumption: true
+  mutation_tool_is_simplifying_assumption: true   # the paper never names its Python engine
