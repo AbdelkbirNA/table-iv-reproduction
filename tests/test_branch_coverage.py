@@ -1,3 +1,5 @@
+import random
+
 from table_iv_replication.branch_coverage import (
     branch_points,
     measure_one,
@@ -5,7 +7,10 @@ from table_iv_replication.branch_coverage import (
     possible_branch_arcs,
     union_arcs,
 )
+from table_iv_replication.sampling import full_pool_adequacy, greedy_random_sample
 from table_iv_replication.target import target_program
+from table_iv_replication.types import TestObservation
+from table_iv_replication import statement_coverage
 
 # Line 2 is sequential, line 3 is the only decision point.
 SOURCE = """def classify(x):
@@ -13,6 +18,11 @@ SOURCE = """def classify(x):
     if y > 0:
         return 1
     return -1
+"""
+
+BRANCHLESS_SOURCE = """def double(x):
+    y = x * 2
+    return y
 """
 
 LOOP_SOURCE = """def first_negative(values):
@@ -83,7 +93,50 @@ def test_runtime_error_is_recorded_not_hidden():
 
 def test_adequacy_items_are_stable_strings():
     observations, _ = measure_source(SOURCE, "classify", [[1]])
-    assert observations[0].adequacy_items == frozenset({"3->4"})
+    # Lines *and* the arc: branch adequacy subsumes statement adequacy.
+    assert observations[0].adequacy_items == frozenset({"L2", "L3", "L4", "3->4"})
+
+
+def test_branch_adequacy_subsumes_statement_adequacy():
+    """100% branch coverage implies 100% statement coverage -- enforce it.
+
+    Also how coverage.py scores its own branch mode: ratio_covered is
+    (n_executed + n_executed_branches) / (n_statements + n_branches).
+    """
+    inputs = [[1], [-1]]
+    branches, _ = measure_source(SOURCE, "classify", inputs)
+    statements = statement_coverage.measure_source(SOURCE, "classify", inputs)[0]
+
+    for branch, statement in zip(branches, statements):
+        assert statement.adequacy_items <= branch.adequacy_items
+
+
+def test_a_branchless_program_is_not_adequate_for_the_empty_suite():
+    """The bug this file's fix exists for.
+
+    Arcs-only adequacy gives a branchless program an *empty* target set, which
+    the empty suite satisfies. The sampler then selects nothing and the fault's
+    branch FTR is 0 by construction, whatever the pool contains. Eight of the
+    thirty reproduction faults hit exactly this.
+    """
+    observations, possible = measure_source(BRANCHLESS_SOURCE, "double", [[1], [2]])
+    assert possible == frozenset(), "expected a genuinely branchless program"
+    assert all(o.arcs == frozenset() for o in observations)
+
+    tests = [
+        TestObservation(
+            test_id=f"t{o.index}",
+            adequacy_items=o.adequacy_items,
+            triggers_fault=o.index == 0,
+            detects_fault=o.index == 0,
+        )
+        for o in observations
+    ]
+    target = full_pool_adequacy(tests)
+    assert target, "branchless program must still have adequacy items"
+
+    suite = greedy_random_sample(tests, rng=random.Random(0))
+    assert suite, "the empty suite must never be branch-adequate here"
 
 
 def test_full_pool_never_targets_an_impossible_outcome():

@@ -172,7 +172,10 @@ def build_pool_and_adequacy(fault, *, target_size, seed, timeout):
     statements, _ = statement_coverage.measure_source(source, entry, fault["inputs"])
     statement_items = {ids[o.index]: frozenset(f"L{n}" for n in o.lines) for o in statements}
     branches, _ = branch_coverage.measure_source(source, entry, fault["inputs"])
-    branch_items = {ids[o.index]: frozenset(f"{a[0]}->{a[1]}" for a in o.arcs) for o in branches}
+    # adequacy_items, not o.arcs: branch adequacy subsumes statement adequacy
+    # (lines + arcs). An arcs-only criterion makes the empty suite adequate for
+    # any branchless program -- see branch_coverage.py and report §9.
+    branch_items = {ids[o.index]: o.adequacy_items for o in branches}
 
     # Oracle-blind: the selector sees coverage only, never the trigger status.
     structural = {

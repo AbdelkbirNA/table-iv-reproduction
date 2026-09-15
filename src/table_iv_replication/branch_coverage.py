@@ -17,6 +17,19 @@ source. Those arcs are not adequacy items -- they would otherwise inflate the
 full-pool target with an outcome no correct execution can reach. They are kept
 on ``BranchCoverage.discarded_arcs`` rather than dropped silently.
 
+**Branch adequacy subsumes statement adequacy.** A branch-adequate suite must
+cover every executed line *and* every executed branch outcome, so
+``adequacy_items`` is the union of both. This is not a stylistic choice: it is
+the standard subsumption property (100% branch coverage implies 100% statement
+coverage) and it is also how coverage.py computes its own branch-mode
+percentage -- ``Numbers.ratio_covered`` is
+``(n_executed + n_executed_branches) / (n_statements + n_branches)``.
+
+Arcs alone are *not* a usable adequacy criterion. A branchless function has no
+arcs at all, so under an arcs-only definition the **empty suite** satisfies the
+full pool's branch adequacy and the criterion silently scores zero. See
+``report/report.md`` §9 for the measurement that caught this.
+
 The target is any Python source string -- in the reproduction it is the faulty
 implementation under test, not the canonical reference.
 """
@@ -59,8 +72,16 @@ class BranchCoverage:
 
     @property
     def adequacy_items(self) -> frozenset[str]:
-        """Criterion items in the form consumed by TestObservation."""
-        return frozenset(f"{origin}->{destination}" for origin, destination in self.arcs)
+        """Criterion items in the form consumed by TestObservation.
+
+        Lines *and* arcs: branch adequacy subsumes statement adequacy (module
+        docstring). The two namespaces are disjoint -- ``L12`` vs ``3->4`` --
+        and ``L`` matches :mod:`statement_coverage`, so the statement items of
+        a test are literally a subset of its branch items.
+        """
+        return frozenset(f"L{line}" for line in self.lines) | frozenset(
+            f"{origin}->{destination}" for origin, destination in self.arcs
+        )
 
     @classmethod
     def from_record(cls, record: ExecutionRecord, possible: frozenset[Arc]) -> "BranchCoverage":
