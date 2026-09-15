@@ -7,6 +7,12 @@ from pathlib import Path
 
 import pytest
 
+from conftest import requires_promptanalysis
+
+# Every test here resolves the pilot's candidates out of the fetched
+# PromptAnalysis artifacts. Without them there is nothing to drive.
+pytestmark = requires_promptanalysis
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 

@@ -2,6 +2,8 @@ import json
 
 import pytest
 
+from conftest import requires_promptanalysis
+
 from table_iv_replication.promptanalysis_adapter import (
     ORIGINAL_GENERATIONS,
     US_DATASET,
@@ -122,6 +124,7 @@ def test_artifacts_are_pinned_to_the_audited_commit():
 
 
 @needs_artifacts
+@requires_promptanalysis
 def test_real_artifacts_parse_into_the_expected_shapes():
     variants = load_prompt_variants(US_DATASET)
     generations = load_generations(ORIGINAL_GENERATIONS)
